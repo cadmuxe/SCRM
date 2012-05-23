@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <link href="static/css/bootstrap.css" rel="stylesheet" type="text/css">
+        <link href="static/css/bootstrap-responsive.min.css" rel="stylesheet" type="text/css">
+        <title>{% block title %}{% endblock %}</title>
+        <style>
+            body {
+                padding-top: 60px;
+            }
+            .container .nav {
+                float:right;
+            }
+        </style>
+        {% block css %}{% endblock %}
+            
+    </head>
+    <body>
+        <div class="navbar navbar-fixed-top">
+            <div class="navbar-inner">
+                <div class="container">
+                    <ul class="nav">
+                        {% for i in range(g.settings.navbar|count) %}
+                        <li {% if i == navbar_n %} class="active" {% endif %}> 
+                            <a href="{{g.settings.navbar[i][0]}}">{{g.settings.navbar[i][1]}}</a> 
+                        </li>
+                        {% endfor %}
+                        <li>
+                            <div class="btn-group">
+                                <a class="btn btn-primary dropdown-toggle" data-toggle="dropdown" href="#"><i class="icon-user icon-white"></i> {{session['name']}} <span class="caret"></span></a>
+                                <ul class="dropdown-menu">
+                                    <li><a href="#">Settings</a></li>
+                                    <li class="divider"></li>
+                                    <li><a href="/logout">Logout</a></li>
+                                </ul>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <div class="container">
+            {% block content %}{% endblock %}
+        </div>
+        <script type="text/javascript" src="static/js/jquery-1.7.2.js"></script>
+        <script type="text/javascript" src="static/js/bootstrap.js"></script>
+        <script>
+            $('.dropdown-toggle').dropdown()
+        </script>
+        {% block js %}{% endblock %}
+    </body>
+
+</html>

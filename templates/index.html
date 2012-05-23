@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+
+{% block title %}Index{% endblock %}
+
+
+<!-- Css -->
+{% block css %}
+<style>
+</style>
+{% endblock %}
+
+{% block content %}
+<h1>Fanfan CRM</h1>
+<p>
+"The submodules often need to refer to each other. For example, 
+the surround module might use the echo module.<br> 
+In fact, such references are so common that the import statement first looks in the containing 
+package before looking in the standard module search path. 
+<br>Thus, the surround module can simply use import echo or from echo import echofilter. 
+If the imported module is not found in the current package 
+(the package of which the current module is a submodule), 
+the import statement looks for a top-level module with the given name."
+</p>
+<p>
+The submodules often need to refer to each other. For example, the surround module might use the echo module. In fact, such references are so common that the import statement first looks in the containing package before looking in the standard module search path. Thus, the surround module can simply use import echo or from echo import echofilter. If the imported module is not found in the current package (the package of which the current module is a submodule), the import statement looks for a top-level module with the given name.
+</p>
+
+{% endblock %}
+
+
+
+{% block js %}
+<script>
+$('.dropdown-toggle').dropdown()
+ </script>
+{% endblock %}
