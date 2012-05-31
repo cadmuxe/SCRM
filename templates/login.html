@@ -2,8 +2,8 @@
 <html>
     <head>
         <meta charset="utf-8">
-        <link href="static/css/bootstrap.css" rel="stylesheet" type="text/css">
-        <link href="static/css/bootstrap-responsive.min.css" rel="stylesheet" type="text/css">
+        <link href="/static/css/bootstrap.css" rel="stylesheet" type="text/css">
+        <link href="/static/css/bootstrap-responsive.min.css" rel="stylesheet" type="text/css">
         <title>Login</title>
         <style>
             .container
@@ -12,16 +12,18 @@
             }
             .mybut
             {
-                margin-left:150px;
+                margin-left:80px;
+            }
+            .myform
+            {
+                width:220px;
             }
         </style>
     </head>
     <body>
-        
         <div class="container">
-            <div class="row">
-                <div class="span4 offset5">
-                    <form class="form-vertical" method="post"> 
+            <div class="myform">
+                    <form class="form-vertical well myform" method="post"> 
                         <input type="text" name="username" placeholder="Username"> </br>
                         <input type="password" name="passwd" placeholder="Password"> </br>
                         <div class="mybut">
@@ -29,11 +31,12 @@
                         </div>
                     </form>
                 </div>
-            </div>
         </div>
-        <script type="text/javascript" src="static/js/jquery-1.7.2.js"></script>
-        <script type="text/javascript" src="static/js/bootstrap.js"></script>
+        <script type="text/javascript" src="/static/js/jquery-1.7.2.js"></script>
+        <script type="text/javascript" src="/static/js/bootstrap.js"></script>
+        <script type="text/javascript" src="/static/js/jquery.center.js"></script>
         <script>
+            $('.myform').center();
         </script>
     </body>
 

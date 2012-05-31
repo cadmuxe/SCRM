@@ -1,0 +1,239 @@
+{% extends "base.html" %}
+
+{% block title %}Index{% endblock %}
+
+
+<!-- Css -->
+{% block css %}
+<style>
+    .mylabel{
+        margin-right:10px;
+    }
+
+</style>
+{% endblock %}
+
+<!-- ++++++++++++Content+++++++++++++ -->
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="span2">
+            <!--Sidebar content-->
+            <div class="" style="padding: 8px 0; margin-right:20px;">
+            <ul class="nav nav-list">
+                <li class="nav-header">
+                    客户管理
+                </li>
+                <li>
+                    <a href="/customer"><i class="icon-list"></i>列表</a>
+                </li>
+                <li class="active">
+                    <a href="/customer_add"><i class="icon-edit"></i>增加客户</a>
+                </li>
+            </ul>
+            </div>
+        </div>
+        <div class="span10">
+            <!--Body content-->
+            <div class="myform">
+                    <div class="row">
+                        <form class="form-inline myform" action=""> 
+                            <div class="row well">
+                            
+                                <div class="span3">
+                                    
+                                <div class="control-group">
+                                    <input type="text" class="input-medium mydata" id="name" placeholder="客户姓名">
+                                </div>
+                                
+                                <div class="control-group">
+                                    <input type="radio" id="sexRadios1" value="option1" checked="">
+                                        女士
+                                    <input type="radio" id="sexRadios2" value="option2">
+                                        男士
+                                </div>
+                                
+                                <div class="control-group">
+                                    <label class="control-label">生日</label>
+                                    <input type="text" class="input-medium mydata" id="birth" placeholder="yyyy-mm-dd">
+                                </div>
+
+                                <div class="control-group">
+                                    <label class="control-label">行业</label>
+                                    <input type="text" class="input-medium mydata" id="sector" placeholder="行业">
+                                </div>
+                                
+                                <div class="control-group">
+                                    <label class="control-label">职业</label>
+                                    <input type="text" class="input-medium mydata" id="vocation" placeholder="职业">
+                                </div>
+                            
+                            
+                            </div>
+                                <div class="span5">
+                                <div class="control-group">
+                                        <input type="text" class="input-small mydata" id="phone_w" placeholder="工作电话">
+                                        <input type="text" class="input-small mydata" id="phone_p" placeholder="私人电话">
+                                        <input type="text" class="input-small mydata" id="phone_h" placeholder="家庭电话">
+                                </div>
+
+                                <div class="control-group">
+                                        <input type="text" class="input-medium mydata" id="email_w" placeholder="工作邮箱">
+                                        <input type="text" class="input-medium mydata" id="email_p" placeholder="私人邮箱">
+                                </div>
+                                
+                                <div class="control-group">
+                                    <label class="control-label">公司名称</label>
+                                    <input type="text" class="input-large mydata" id="company" placeholder="公司">
+                                </div>
+                                
+                                <div class="control-group">
+                                    <label class="control-label">家庭住址</label>
+                                    <input type="text" class="input-large mydata" id="addr_h" placeholder="家庭住址">
+                                </div>                                
+                            
+                            </div>
+                            </div>  
+                            <div class="row">
+                                <div class="span3">
+                                    <div class="control-group">
+                                        <label class="control-label">爱好</label>
+                                        <div class="controls">
+                                            <input type="text" class="input-mini mydata" id="likes" placeholder="爱好"> 
+                                                <a class="btn btn-primary btn-mini" href="">添加</a>
+                                                <p>
+                                                <div id="likes">
+                                                    <i class=" icon-tags"></i> 
+                                                    <span><i class=" icon-remove"></i>体育 </span>
+                                                    <span><i class=" icon-remove"></i>歌曲 </span>
+                                                </div>
+                                                </p>
+                                                </div>
+                                    </div>
+                                </div>
+                                <div class="span5">
+                                    
+                                    <div class="control-group">
+                                        <label class="control-label">Wishlist</label>
+                                        <div class="controls">
+                                            <input type="text" class="input-large mydata" id="name" name="name" placeholder="爱好"> 
+                                                <a class="btn btn-primary btn-mini" href="">添加</a>
+                                                
+                                                <div id="likes">
+                                                    <ul class="unstyled">
+                                                        <li><i class=" icon-remove"></i>孙女想要一个小王冠 </li>
+                                                        <li><i class=" icon-remove"></i>听王菲演唱会 </li>
+                                                        
+                                                    </ul>
+                                                </div>
+                                                
+                                                </div>
+                                    </div>
+                                    
+                                </div>
+                            </div>
+                        </form>
+
+                        <div class="row">
+                            <div class="span10">
+                            <form class="form-inline" action="">
+                                <label class="mylabel">相关人员</label>
+                                <input type="text" class="input-small mydata r_name" placeholder="姓名">
+                                <input type="text" class="input-mini mydata r_relation" placeholder="关系"> 
+                                    
+                                    <!--
+                                    <select id="combobox_relation_h">
+                                        <option value="">Select one..</option>
+                                    {% for i in g.db["settings"].find_one({"type":"relation_h"}).value %}
+                                        <option value="{{i|safe}}">{{i|safe}}</option>
+                                    {% endfor %}
+                                    </select>
+                                    -->
+                                    
+                                    
+                                <input type="text" class="input-small mydata r_phone" placeholder="电话">
+                                <input type="text" class="input-medium mydata r_email" placeholder="E-mail">
+                                <input type="text" class="input-large mydata r_remark" placeholder="备注">
+                                <i class="icon-plus-sign"></i>                                
+                            </form>
+                                
+                            <form class="form-inline" action="">
+                                <label class="mylabel">社会关系</label>
+                                <input type="text" class="input-small mydata s_name" placeholder="姓名">
+                                <input type="text" class="input-mini mydata s_relation" placeholder="关系">                                   
+                                <input type="text" class="input-large mydata s_remark" placeholder="备注">
+                                <i class="icon-plus-sign"></i>                                
+                            </form>
+                                
+                                <form class="form-inline" action="">
+                                    <label class="mylabel">客户来源</label>
+                                    <input type="text" class="input-small mydata" id="channel" placeholder="来源渠道">
+                                    <input type="text" class="input-small mydata" id="introducer" placeholder="介绍人">
+
+                                </form>
+                                
+                                
+                                
+                                                            
+                                <div class="control-group">
+                                    <label class="control-label" for="textarea">备忘录</label>
+                                    <div class="controls">
+                                        <textarea class="span8" id="remark" rows="3"></textarea>
+                                    </div>
+                                </div>
+                            
+                            </div>
+                        </div>
+                    </div>
+                <a class="btn btn-success btn-large" href="">提交</a> 
+            </div>
+            
+            
+            <!--Body content End-->
+
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block js %}
+<script>
+    var sector = {{g.myjsonify(g.db["settings"].find_one({"type":"sector"}))|safe}};
+    var vocation = {{g.myjsonify(g.db["settings"].find_one({"type":"vocation"}))|safe}};
+    var likes = {{g.myjsonify(g.db["settings"].find_one({"type":"likes"}))|safe}};
+    var relation_h = {{g.myjsonify(g.db["settings"].find_one({"type":"relation_h"}))|safe}};
+    var relation_s = {{g.myjsonify(g.db["settings"].find_one({"type":"relation_s"}))|safe}};
+    var channel = {{g.myjsonify(g.db["settings"].find_one({"type":"channel"}))|safe}};   
+    
+    $(function(){ 
+      
+      /*
+       matcher:mymatch
+       */
+      $('#sector').typeahead({source:sector.value,items:5,matcher:mymatcher});
+      $('#vocation').typeahead({source:vocation.value,items:5,matcher:mymatcher});
+      $('#likes').typeahead({source:likes.value,items:5,matcher:mymatcher});
+      
+   /* $('.mydata').bind({
+                            dblclick:function(){
+                                $(this).removeClass("uneditable-input");
+                            },
+                            focusout:function(){
+                            $(this).addClass("uneditable-input");
+                            }
+                            });
+      $('#submit_btn').click(function(){
+                             var myjson={'name':$("input#name").val(),'phone':$("input#phone").val()}
+                             
+                             $.ajax({
+                                    type: 'POST',
+                                    url: '/customer_add',
+                                    data: JSON.stringify(myjson),
+                                    contentType: 'application/json;charset=UTF-8'
+                                    });
+                             return false;  
+                             });  */
+      
+      }); 
+ </script>
+{% endblock %}
