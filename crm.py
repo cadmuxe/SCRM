@@ -22,14 +22,24 @@ def get_db():
     return connection['fanfan_crm']
 
 # helps
+def get_pure_dic(bson):
+# convert bson object to python dic (mainly the id object)
+    if bson.has_key('_id'):
+        id = bson.pop('_id')
+        bson['_id'] = str(id)
+    return bson
+
 def myjsonify(dic):
-    return json.dumps(dic,default=json_util.default,ensure_ascii=False)
+    return json.dumps( get_pure_dic(dic) )
+    #return json.dumps(dic,default=json_util.default,ensure_ascii=False)
+
 
 @app.before_request
 def before_request():
     g.db = get_db()
     g.settings = settings()
     g.myjsonify = myjsonify
+    g.get_pure_dic = get_pure_dic
 
 def auth():
     if 'name' not in session:
@@ -39,7 +49,8 @@ def auth():
 @app.route('/api/<type>/<action>',methods=['GET','POST'])
 def api(type,action):
     a = g.db["settings"].find_one({"type":"sector"})
-    return json.dumps(a,default=json_util.default,ensure_ascii=False)
+    return myjsonify(a)
+
 
 @app.route('/')
 def home():
@@ -72,13 +83,19 @@ def login():
         username = request.form['username']
         passwd = hashlib.md5(request.form['passwd']).hexdigest()
         u = g.db['users'].find_one({"username":username,"passwd":passwd})
+        u = get_pure_dic(u)
         if u:
-            session['id'] = u['_id']
+            session['_id'] = u['_id']
             session['name'] = u['name']
             session['type'] = u['type']
             return redirect(url_for('home'))
         else:
             return "no"
+@app.route('/print_info')
+def print_info():
+    str = session['_id']
+    return str
+
 @app.route('/logout')
 def logout():
     session.clear()
