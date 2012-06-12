@@ -190,6 +190,9 @@
             
             <!--Body content End-->
 
+
+
+            <div class="result"></div>
         </div>
     </div>
 </div>
@@ -296,7 +299,7 @@
                             customer.type = "customer";
                             customer.manager = "{{ session['_id'] }}";
                             customer.name = $('input#name').val();
-                            customer.gender = $('input[name=gender]').val();
+                            customer.gender = $('input[name=gender]:checked').val();
                             t = $("input#birth").val();
                             if (t != ""){
                                 t = t.split("-");
@@ -304,6 +307,7 @@
                                 date = new Date(t[0],t[1],t[2]);
                                 customer.birthday = Math.floor(date.getTime()/1000);   //服务器端转换成单独记录，存放id
                             }
+                            else {customer.birthday = 0;}
                             customer.sector = $('input#sector').val();
                             customer.vocation = $('input#vocation').val();
                             
@@ -334,6 +338,17 @@
                             
                             customer.channel = {"method":$('#channel').val(), "introducer_id":$('#introducer').val()};
                             customer.remark = $('#remark').val();
+                            
+                            var request = $.ajax({
+                                                 type: "POST",
+                                                 url: "/api/customer/add",
+                                                 contentType:"application/json",
+                                                 data: JSON.stringify(customer),
+                                                 success: function(data) {
+                                                           $('.result').html(data);
+                                                                 }
+                                                 });
+                            
                             
                             return false;
                             });

@@ -1,7 +1,7 @@
 #-*- coding:utf-8 -*-
 from flask import Flask, g, request, session, redirect, url_for, jsonify
 from flask import render_template as r_t
-import pymongo, hashlib, json
+import pymongo, hashlib, json, random
 from bson import BSON, json_util
 
 app = Flask(__name__)
@@ -20,6 +20,25 @@ class settings():
 def get_db():
     connection = pymongo.Connection('localhost',27017)
     return connection['fanfan_crm']
+def db_customer_add(customer):
+    print type(customer)
+    db = get_db()
+    customer_id = db.customer.insert(customer)
+    if customer["birthday"] != "0":
+        birthday = {"type":"birthday",
+                "user_id":customer_id,
+                "title":customer["name"]+u"的生日",
+                "allDay":"false",
+                "start":customer["birthday"],
+                "end":0,
+                "repeat":"1y",
+                "remind":0,
+                "editable":"false",
+                "remark":""
+                }
+        birthday_id = db.cal.insert(birthday)
+        db.customer.update({"_id":customer_id},{"$set": {"birthday": birthday_id}})
+    return customer_id
 
 # helps
 def get_pure_dic(bson):
@@ -32,6 +51,10 @@ def get_pure_dic(bson):
 def myjsonify(dic):
     return json.dumps( get_pure_dic(dic) )
     #return json.dumps(dic,default=json_util.default,ensure_ascii=False)
+    
+def print_dict(dic):
+    for i in dic:
+        print i + " : " + dic[i] + "\n"
 
 
 @app.before_request
@@ -50,6 +73,18 @@ def auth():
 def api(type,action):
     a = g.db["settings"].find_one({"type":"sector"})
     return myjsonify(a)
+
+@app.route('/api/customer/token')
+def api_customer_token():
+    return "hi"
+
+@app.route('/api/customer/add',methods=['POST'])
+def api_customer_add():
+    if request.method == 'POST':
+        customer = request.json
+        db_customer_add(customer) 
+        return str(customer)
+    return "ok"
 
 
 @app.route('/')
