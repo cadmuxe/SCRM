@@ -51,9 +51,7 @@ function mkRslt(arr){
 
 
 
-function mymatcher (item){
-    return matcherpy(item,this.query) || matchere(item,this.query);
-}
+
 
 function matcherpy (item,query) {
     this.query = query;
@@ -71,5 +69,6 @@ function matchere (item,query) {
     return false;
 }
 
-
-
+function mymatcher (item){
+    return matcherpy(item,this.query) || matchere(item,this.query);
+}

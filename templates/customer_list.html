@@ -12,10 +12,10 @@
 <!-- ++++++++++++Content+++++++++++++ -->
 {% block content %}
 <div class="container-fluid">
-    <div class="row-fluid">
+    <div class="row">
         <div class="span2">
             <!--Sidebar content-->
-            <div class="well" style="padding: 8px 0;">
+            <div class="" style="padding: 8px 0; margin-right:20px;">
             <ul class="nav nav-list">
                 <li class="nav-header">
                     客户管理
@@ -33,18 +33,114 @@
         </div>
         <div class="span10">
             <!--Body content-->
+            <form class="form-search">
+                <input type="text" class="input-xlarge search-query" id="text_query" placeholder="Search..">
+            </form>
+            <table class="table table-striped" id="customer_list">
+                <thead>
+                <tr>
+                    <th>#</th>
+                    <th>客户类型</th>
+                    <th>公司</th>
+                    <th>姓名</th>
+                    <th>行业</th>
+                    <th>职业</th>
+                    <th>上次通信时间</th>
+                    <th>累计合约</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                </tr>
+                </tbody>
+            </table>
+            <div class="btn-group btn-min">
+                <a class="btn" id="btn_prev">prev</a>
+                <a class="btn" id="btn_next">next</a>
+            </div>
+            <span id="view">View 1-10 of 100</span>
+
+
+
+
         </div>
     </div>
 </div>
 {% endblock %}
 
-
-
-
-
-
-
 {% block js %}
 <script>
+    var page_now =1;
+    var pages;
+    function updata_list(page){
+        query = $('#text_query').val();
+        updata_list_o(page,query);
+    }
+    function updata_list_o(page, query){
+        if (page ==null){
+            page = 1;
+        }
+        if (query ==null){
+            query="";
+        }
+        var request = $.ajax({
+            type: "POST",
+            url: "/api/customer/list",
+            data: {'page':page,'query':query} ,
+            dataType:'json',
+            success: function(data) {
+                var l=data.list;
+                html = "<tbody>"
+                for(var i=0;i<data.total;i++){
+                    h = "<tr><td>"+(i+1)+ "</td><td><a class='btn_add' href='#'>"+l[i].type + "</a></td><td><a class='btn_add' href='#'>"+l[i].company+"</a></td><td><a class='btn_name' ";
+                    h += "href='/customer/"+l[i]._id+"'>" +l[i].name;
+                    h += "("+l[i].gender +")</a></td><td><a class='btn_add' href='#'>"+l[i].sector+"</a></td><td><a class='btn_add' href='#'>"+l[i].vocation+"</a></td><td>";
+                    h += l[i].contact_record +"</td><td>"+ l[i].amount +"</td></tr>";
+                    html +=h;
+                }
+                html+="</tbody>";
+                $('#customer_list tbody').replaceWith(html);
+                var view ="<span id='view'>View "+data.now+" of "+data.total+"</span";
+                $('#view').replaceWith(view);
+                pages = data.pages;
+                page_now = data.page_now;
+            }
+        });
+    }
+    $("#text_query").keydown(function(event){
+        if ( event.which == 13 ) {
+            updata_list(1);
+            return false;
+        }
+    });
+    $('.btn_add').live("click",function(){
+        var q = $("#text_query").val();
+        q += " " +$(this).text();
+        $("#text_query").val(q);
+        updata_list(1);
+        return false;
+    });
+    $('#btn_prev').click(function(){
+        page_now +=1;
+        if(page_now>pages){page_now=pages;}
+        updata_list(page_now);
+        return false;
+    });
+    $('#btn_next').click(function(){
+        page_now -=1;
+        if(page_now<1){page_now=1;}
+        updata_list(page_now);
+        return false;
+    });
+    $(function(){
+        updata_list(1);
+    });
+
  </script>
 {% endblock %}

@@ -48,7 +48,7 @@
                                             <input type="radio" name="gender" id="sexRadios1" value="女士">女士
                                         </label>
                                         <label class="radio">
-                                            <input type="radio" name="gender" id="sexRadios2" value="男士">男士
+                                            <input type="radio" name="gender" id="sexRadios2" value="先生">先生
                                         </label>
                                     </div>
                                     <div class="control-group">
@@ -293,64 +293,64 @@
                               $(this).parent().remove();
                               return false;
                               });
-      
+      $('a#btn_submit').click( function(){
+            customer.type = "customer";
+            customer.manager = "{{ session['_id'] }}";
+            customer.name = $('input#name').val();
+            customer.gender = $('input[name=gender]:checked').val();
+            t = $("input#birth").val();
+            if (t != ""){
+                t = t.split("-");
+                t[1]-=1;
+                date = new Date(t[0],t[1],t[2]);
+                customer.birthday = Math.floor(date.getTime()/1000);   //服务器端转换成单独记录，存放id
+            }
+            else {customer.birthday = 0;}
+            customer.sector = $('input#sector').val();
+            customer.vocation = $('input#vocation').val();
+
+            customer.phone = {"work":$('input#phone_w').val(),"personal":$('input#phone_p').val(),"home":$('input#phone_h').val()};
+            customer.email = {"work":$('input#email_w').val(),"personal":$('input#email_p').val()};
+            customer.company = $("input#company").val();
+            customer.home_addr = $('input#home_addr').val();
+
+            customer.relevance_people = [];
+            customer.social = [];
+            var rp = $('div#relevants div.relevant');
+            for(var i = 0; i < rp.length; i++){
+                var r=$(rp[i]).children()
+                customer.relevance_people.push({"name" : $(r[0]).val(),
+                    "relation" : $(r[1]).val(),
+                    "phone" : $(r[2]).val(),
+                    "email" : $(r[3]).val(),
+                    "remark": $(r[4]).val()});
+            }
+
+            var sp = $('div#relevants div.social');
+            for(var i = 0; i < sp.length; i++){
+                var s=$(sp[i]).children()
+                customer.social.push({"customer_id" : $(s[0]).val(),    //进一步处理
+                    "relation" : $(s[1]).val(),
+                    "remark" : $(s[2]).val()});
+            }
+
+            customer.channel = {"method":$('#channel').val(), "introducer_id":$('#introducer').val()};
+            customer.remark = $('#remark').val();
+
+            var request = $.ajax({
+                type: "POST",
+                url: "/api/customer/add",
+                contentType:"application/json",
+                data: JSON.stringify(customer),
+                success: function(data) {
+                    $('.result').html(data);
+                }
+            });
+
+            return false;
       });
-    $('a#btn_submit').click( function(){
-                            customer.type = "customer";
-                            customer.manager = "{{ session['_id'] }}";
-                            customer.name = $('input#name').val();
-                            customer.gender = $('input[name=gender]:checked').val();
-                            t = $("input#birth").val();
-                            if (t != ""){
-                                t = t.split("-");
-                                t[1]-=1;
-                                date = new Date(t[0],t[1],t[2]);
-                                customer.birthday = Math.floor(date.getTime()/1000);   //服务器端转换成单独记录，存放id
-                            }
-                            else {customer.birthday = 0;}
-                            customer.sector = $('input#sector').val();
-                            customer.vocation = $('input#vocation').val();
-                            
-                            customer.phone = {"work":$('input#phone_w').val(),"personal":$('input#phone_p').val(),"home":$('input#phone_h').val()};
-                            customer.email = {"work":$('input#email_w').val(),"personal":$('input#email_p').val()};
-                            customer.company = $("input#company").val();
-                            customer.home_addr = $('input#home_addr').val();
-                            
-                            customer.relevance_people = [];
-                            customer.social = [];
-                            var rp = $('div#relevants div.relevant');
-                            for(var i = 0; i < rp.length; i++){
-                                var r=$(rp[i]).children()
-                                customer.relevance_people.push({"name" : $(r[0]).val(),
-                                                 "relation" : $(r[1]).val(),
-                                                 "phone" : $(r[2]).val(),
-                                                 "email" : $(r[3]).val(),
-                                                 "remark": $(r[4]).val()});
-                            }
-                            
-                            var sp = $('div#relevants div.social');
-                            for(var i = 0; i < sp.length; i++){
-                            var s=$(sp[i]).children()
-                            customer.social.push({"customer_id" : $(s[0]).val(),    //进一步处理
-                                                 "relation" : $(s[1]).val(),
-                                                 "remark" : $(s[2]).val()});
-                            }
-                            
-                            customer.channel = {"method":$('#channel').val(), "introducer_id":$('#introducer').val()};
-                            customer.remark = $('#remark').val();
-                            
-                            var request = $.ajax({
-                                                 type: "POST",
-                                                 url: "/api/customer/add",
-                                                 contentType:"application/json",
-                                                 data: JSON.stringify(customer),
-                                                 success: function(data) {
-                                                           $('.result').html(data);
-                                                                 }
-                                                 });
-                            
-                            
-                            return false;
-                            });
+
+   });
+
  </script>
 {% endblock %}
