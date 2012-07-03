@@ -1,12 +1,7 @@
 #-*- coding:utf-8 -*-
-import pymongo
+import pymongo, myjson_util, json, pymongo.cursor,time
 from bson.objectid import ObjectId
 import uti
-
-
-
-
-
 
 def get_db():
     """return 'fanfan_crm' db
@@ -23,7 +18,65 @@ def get_json_customer_and_id_list():
     return uti.myjsonify(l)
 
 
+class tags:
+    """
+    self.__o is the original mongo object
+    """
+    def __init__(self,type):
+        self.__o = db["settings"].find_one({"type":type})
+        if type == "sector":
+            self.__search = {'collection':'customer','field':'sector'}
+        elif type == "project_sector":
+            self.__search = {'collection':'project','field':'project_sector'}
+            self.__o = db["settings"].find_one({"type":'sector'})
+        elif type == 'vocation':
+            self.__search = {'collection':'customer','field':'vocation'}
+        elif type == 'likes':
+            self.__search = {'collection':'customer','field':'likes'}
+        elif type == 'relation_h':
+            self.__search = {'collection':'customer','field':'relevance_people.relation'}
+        elif type == 'relation_s':
+            self.__search = {'collection':'customer','field':'social.relation'}
+        elif type == 'channel':
+            self.__search = {'collection':'customer','field':'channel.channel'}
+        elif type == 'customer':
+            self.__search = {'collection':'customer','field':'tags'}
+        elif type == 'cal_type':
+            self.__search = {'collection':'cal','field':'cal_type'}
+        elif type == 'cal_tags':
+            self.__search = {'collection':'cal','field':'tags'}
+        else:
+            raise ValueError
+    def get_tags(self):
+        return self.__o["value"]
+    def get_count_of_one_tag(self,tag_name):
+        return db[self.__search['collection']].find({self.__search['field']:tag_name}).count()
+    def get_count_of_tags(self):
+        l = []
+        for t in self.__o["value"]:
+            l.append({'tag':i,'count':self.get_count_of_one_tag(i)})
+        return l
+    def __save(self):
+        return db["settings"].save(self.__o)
+    def add_tag(self,tag):
+        self.__o["value"].append(tag)
+        return self.__save()
+    def remove_tag(self,tag_name,sure):
+        if sure == "i am sure":
+            db[self.__search['collection']].update({self.__search['field']:tag_name},{"$pull":{self.__search['field']:tag_name}})
+            self.__o["value"].remove(tag_name)
+            self.__save()
+        else:
+            raise ValueError
+    def rename(self,tag,new_name):
+        db[self.__search['collection']].update({self.__search['field']:tag_name},{"$push":{self.__search['field']:new_name}})
+        db[self.__search['collection']].update({self.__search['field']:tag_name},{"$pull":{self.__search['field']:tag}})
+        self.__o["value"].remove(tag)
+        self.__o["value"].append(new_name)
+        return self.__save()
 
+    def get_json(self):
+        return json.dumps(self.__o["value"],default=myjson_util.default)
 
 def mongo_find(col,query, selection={},keys="",field_search=[]):
     """ search collection with queries in fields
@@ -48,324 +101,286 @@ def mongo_find(col,query, selection={},keys="",field_search=[]):
     else:
         return col.find(query,selection)
 
-def __get_customer_total_contract_amount(customer_id):
-    """ get customer's totally contract amount
-    """
-    amount = 0
-    if type(customer_id) == str:
-        customer_id = ObjectId(customer_id)
-    list = db["contract"].find({"_id":customer_id})
-    for c in list:
-        amount += int(c["amount"])
-    return amount
 
-def list_differ(new,old):
-    diff={"add":[],"sub":[]}
-    for i in new:
-        try:
-            old.index(i)
-        except ValueError:
-            diff["add"].append(i)
-    for i in old:
-        try:
-            new.index(i)
-        except ValueError:
-            diff["old"].append(i)
-    return diff
-
-def tags_update_add(tag_type,value):
-    t = db["settings"].find({"type":tag_type})
-    if t["value"].has_key(value):
-        t["value"][value] = int(t["value"][value]) + 1
-    else:
-        t["value"][value] = 1
-    db["settings"].save(t)
-
-def tags_update_sub(tag_type,value):
-    value = unicode(value)
-    t = db["settings"].find({"type":tag_type})
-    if t["value"].has_key(value):
-        t["value"][value] = int(t["value"][value]) - 1
-    else:
-        raise ValueError
-    if int(t["value"][value]) == 0:
-        t["value"].pop(value)
-    db["settings"].save(t)
-
-def tags_update(tag_type,diff):
-    for i in diff["add"]:
-        tags_update_add(tag_type,i)
-    for i in diff["sub"]:
-        tags_update_sub(tag_type,i)
-
-class customer:
-    def __init__(self, c):
-        """
-        created by id or customer dict
-        """
-        if type(c) == dict:
-            self.__customer = c
-        elif type(c) == unicode:
-            db = get_db()
-            self.__customer = db["customer"].find_one({"_id":ObjectId(c)})
-        elif type(c) == ObjectId:
-            db = get_db()
-            self.__customer = db["customer"].find_one({"_id":c})
+class querySet:
+    def __init__(self,collection,oset):
+        self.__collection = collection
+        self.__sets = []
+        self.__doc_class = globals()[collection]
+        if type(oset) == pymongo.cursor.Cursor:
+            for i in oset:
+                self.__sets.append(self.__doc_class(i))
         else:
-            raise ValueError
+            self.__sets = oset
 
+    def enlargeSet(self,set):
+        self.__sets += set
+    def count(self):
+        return len(self.__sets)
+    def get_json(self,selection=[]):
+        self.__json_helper =[]
+        for i in self.__sets:
+            self.__json_helper.append(i.get_python(selection))
+        return json.dumps(self.__json_helper,default=myjson_util.default)
+
+    def get_python(self,selection=[]):
+        self.__json_helper =[]
+        for i in self.__sets:
+            self.__json_helper.append(i.get_python(selection))
+        return self.__json_helper
+
+    def skip(self,num):
+        return querySet(self.__collection,self.__sets[num:])
+    def limit(self,num):
+        return querySet(self.__collection,self.__sets[:num])
+    def __len__(self):
+        return len(self.__sets)
+    def __iter__(self):
+        return iter(self.__sets)
+    def __str__(self):
+        pass
+    def __getitem__(self, item):
+        return self.__sets[item]
+
+
+def if_in_list(l,str):
+    try:
+        l.index(str)
+        return True
+    except:
+        return False
+
+class BaseDocument(object):
+    _collection =""
+    _doc ={}
+    _json_helper={}
+    def __init__(self,d):
+        if type(d) == dict:
+            self._doc = d
+        else:
+            try:
+                self._doc = db[self._collection].find_one({"_id":ObjectId(d)})
+            except:
+                print "Error"
+                raise ValueError
+        self.calculate()
     def save(self):
-        return db["customer"].save(self.__customer)
+        return db[self._collection].save(self._doc)
+    def delete(self):
+        return db[self._collection].remove(self._doc)
+    def reload(self):
+        self._doc = db[self._collection].find_one({"_id":ObjectId(self._doc["_id"])})
+        self.calculate()
+        return self._doc["_id"]
+    def validate(self):
+        raise ValueError
+    def _selector_helper(self,selection):
+        """
+        为输出的json 添加，修改各字段值
+        """
+        return selection
+    def __selector(self,selection):
+        if selection == []:
+            selection =  self._doc.keys()
+        selection = self._selector_helper(selection)
+        for field in selection:
+            self._json_helper[field]=self._doc[field]
+    def get_json(self,selection=[]):
+        """
+        """
+        self.__selector(selection)
+        return json.dumps(self._json_helper,default=myjson_util.default)
+    def get_python(self,selection=[]):
+        self.__selector(selection)
+        return self._json_helper
+
+    def calculate(self):
+        raise ValueError
+
+    def __iter__(self):
+        return iter(self._doc)
+    def __str__(self):
+        return "%s : ObjectId(%s)" % (self._collection,str(self._doc["_id"]))
+    def __getitem__(self, item):
+        return self._doc[item]
+    def __setitem__(self, key, value):
+        self._doc[key] = value
+
+class BaseQuery():
+    _collection = ""
+    def find(self,query={}):
+        """
+        """
+        sets_mongo_cursor = db[self._collection].find(query)
+        return querySet(self._collection,sets_mongo_cursor)
+
+    def search(self,query,keys="",field_search=[]):
+        """ search collection with queries in fields
+        query:      pymongo style query,
+        selection:  pymongo style selection
+        field_search:    ["name","company"..] field to be searched
+        dbs.customer_find({"manager":session['_id'],"$or":query,..},
+                    {'_id':1,'name':1,'type':1,'gender':1,"company":1,"sector":1,"vocation":1,..})
+        same as the g.db["customer"].find()
+        """
+        if keys != "" or field_search !=[]:
+            q_or=[]
+            keys = keys.split(' ')
+            for k in keys:
+                k = '.*'+k+'.*'
+                for  f in field_search:
+                    q_or.append({f:{"$regex":k}})
+            query["$or"]= q_or
+        return  self.find(query)
+
+class customerQuery(BaseQuery):
+    def __init__(self):
+        self._collection = "customer"
+
+class calQuery(BaseQuery):
+    def __init__(self):
+        self._collection = "cal"
+
+    def find_by_attend(self,uid):
+        cursor = db[self._collection].find({"attend":ObjectId(uid)})
+        return querySet(self._collection,cursor)
+    def find_by_period(self,start,end):
+        cursor = db[self._collection].find({"start":{"$gt":start,"$lt":end}})
+        return querySet(self._collection,cursor)
+
+class memorialQuery(BaseQuery):
+    def __init__(self):
+        self._collection = "memorial"
+    def find_by_uid(self,uid):
+        cursor = db[self._collection].find({"user_id":ObjectId(uid)})
+        return querySet(self._collection,cursor)
+    def find_by_period(self,start,end):
+        cursor = db[self._collection].find({"this_year_date":{"$gt":start,"$lt":end}})
+        return querySet(self._collection,cursor)
+
+class contractQuery(BaseQuery):
+    def __init__(self):
+        self._collection = "contract"
+    def find_by_customer_id(self,uid):
+        cursor = db[self._collection].find({"user_id":ObjectId(uid)})
+        return querySet(self._collection,cursor)
+
+class customer(BaseDocument):
+    objects = customerQuery()
+    def __init__(self,d):
+        self._collection = "customer"
+        super(customer,self).__init__(d)
 
     def __get_customer_total_contract_amount(self):
         """ get customer's totally contract amount
         """
         amount = 0
-        customer_id = self.__customer["_id"]
-        if type(customer_id) == str:
-            customer_id = ObjectId(customer_id)
-        list = db["contract"].find({"_id":customer_id})
+        list = db["contract"].find({"_id":self._doc["_id"]})
         for c in list:
             amount += int(c["amount"])
         return amount
 
-    def __getattr__(self, item):
-        return self.__customer[item]
-    def __getitem__(self, item):
-        return self.__customer[item]
-    def __setitem__(self, key, value):
-        self.__customer[key] = value
+    def _selector_helper(self,selection):
 
-    def get_pure_dict(self,selection=[]):
-        """
-        selection: ["",""] set the return fields
-        """
-        if selection ==[]:
-            for f in self.__customer:
-                selection.append(f)
-        n_value={}
-        for field in selection:
-            if field == "contact_record":
-                if self.__customer.has_key("contact_record"):
-                    n_value["contact_record"] = cal(self.__customer[field]).get_date()
-                else:
-                    n_value["contact_record"] = u"无联络信息"
-                continue
-            if field == "amount":
-                n_value["amount"] = self.__get_customer_total_contract_amount()
-                continue
-            if field == "birthday":
-                n_value["birthday"] = cal(self.__customer["birthday"]).get_date()
-                continue
-            n_value[field]=self.__customer[field]
-        return uti.get_pure_dict(n_value)
+        if if_in_list(selection,"contact_record"):
+            if self._doc.has_key("contact_record"):
+                self._json_helper["contact_record"] = cal(self._doc["contact_record"])["start_date"]
+            else:
+                self._json_helper["contact_record"] = u"无联络信息"
+            selection.remove("contact_record")
 
+        if if_in_list(selection,"birthday"):
+            self._json_helper["birthday"] =  memorial(self._doc["birthday"])["start_date"]
+            selection.remove("birthday")
+        return selection
+    def calculate(self):
+        self._doc["amount"] = self.__get_customer_total_contract_amount()
 
-    def insert_new(self):
+    def insert_birthday(self,time):
         """ Insert customer to dbs, customer is a dict object
         replace the birthday with the memorial_id.
         return customer_id
         """
+        if self._doc.has_key("id") == False:
+            raise ValueError
+        birthday = {"type":"birthday",
+                    "user_id":self._doc["_id"],
+                    "title":self._doc["name"]+u"的生日",
+                    "allDay":"false",
+                    "start":time,
+                    "end":0,
+                    "editable":"false",
+                    "remark":""
+        }
+        self._doc["birthday"] = memorial(birthday).save()
         self.save()
-        if self.__customer["birthday"] != "0":
-            birthday = {"type":"birthday",
-                        "user_id":self.__customer["_id"],
-                        "title":self.__customer["name"]+u"的生日",
-                        "allDay":"false",
-                        "start":self.__customer["birthday"],
-                        "end":0,
-                        "repeat":"1y",
-                        "remind":0,
-                        "editable":"false",
-                        "remark":""
-            }
-            self.__customer["birthday"] = cal(birthday).save()
-            self.save()
-        return self.__customer["_id"]
+        return True
     def insert_memorial_day(self,dict):
         i = cal(dict).save()
-        self.__customer["memorial_days"].append(i)
+        self._doc["memorial_days"].append(i)
         self.save()
 
     def insert_contact(self,dict):
         i = contact(dict).save()
-        self.__customer["contact_record"] = i
+        self._doc["contact_record"] = i
         self.save()
 
     def insert_social(self,dict):
-        self.__customer["social"].append(dict)
+        dict["customer_id"] = ObjectId(dict["customer_id"])
+        self._doc["social"].append(dict)
         self.save()
 
-
-
-
-
-class customer_list:
-    def __init__(self,query, keys="", field_search=[], field_selection=[]):
-        self.__customers_o = mongo_find(db["customer"],query, keys = keys, field_search=field_search)
-        self.__customers_pure = []
-        self.__customers = []
-        for i in self.__customers_o:
-            self.__customers.append(customer(i))
-        for c in self.__customers:
-            self.__customers_pure.append(c.get_pure_dict(field_selection))
-
-
-    def __iter__(self):
-        return self.__customers.__iter__()
-    def __len__(self):
-        return  self.__customers.count()
-    def pagination(self,skip,limit=10):
-        return self.pure_dict()[skip:skip+limit]
-    def pure_dict(self):
-        """  convert all the ObjectId to string in the customer list
-        """
-        return self.__customers_pure
-
-
-class cal:
+class cal(BaseDocument):
+    objects = calQuery()
     def __init__(self,c):
-        if type(c) == dict:
-            self.__cal = c
-        elif type(c) == unicode:
-            db = get_db()
-            self.__cal = db["cal"].find_one({"_id":ObjectId(c)})
-        elif type(c) == ObjectId:
-            db = get_db()
-            self.__cal = db["cal"].find_one({"_id":c})
-        else:
-            raise ValueError
-        self.__cal["start_date"] = uti.time_convert_to_utc_date(self.__cal["start"])
-        self.__cal["start_time"] = uti.time_convert_to_utc_date(self.__cal["start"])
-        self.__cal["end_date"] = uti.time_convert_to_utc_date(self.__cal["end"])
-        self.__cal["end_time"] = uti.time_convert_to_utc_date(self.__cal["end"])
-    def __getattr__(self, item):
-        return self.__cal[item]
-    def __getitem__(self, item):
-        return self.__cal[item]
-    def __setitem__(self, key, value):
-        self.__cal[key] = value
-    def get_date(self):
-        return uti.time_convert_to_utc_date(self.__cal["start"])
-    def get_time(self):
-        return uti.time_convert_to_utc_time(self.__cal["start"])
-    def save(self):
-        return db["cal"].save(self.__cal)
-    def get_pure_dict(self):
-        return uti.get_pure_dict(self.__cal)
+        self._collection = "cal"
+        super(cal,self).__init__(c)
+
+    def calculate(self):
+        self._doc["start_date"] = uti.time_convert_to_utc_date(self._doc["start"])
+        self._doc["start_time"] = uti.time_convert_to_utc_time(self._doc["start"])
+        self._doc["end_date"] = uti.time_convert_to_utc_date(self._doc["end"])
+        self._doc["end_date"] = uti.time_convert_to_utc_time(self._doc["end"])
+
     def have_done(self):
-        self.__cal["is_ok"] = "true"
+        self._doc["is_ok"] = "true"
         self.save()
     def do_not_done(self):
-        self.__cal["is_ok"] = "false"
+        self._doc["is_ok"] = "false"
         self.save()
 
-
-class cal_list:
-    def __my_init(self):
-        self.__cal_pure = []
-        self.__cal = []
-        for i in self.__cal_o:
-            self.__cal.append(cal(i))
-        for c in self.__cal:
-            self.__cal_pure.append(c.get_pure_dict(field_selection))
-
-    def __init__(self, customer_id=0,start = 0,end = 0):
-        if customer_id != 0:
-            if type(customer_id) == unicode:
-                customer_id = ObjectId(customer_id)
-            self.__cal_o = db["cal"].find({"attend":customer_id})
-        elif start != 0 and end != 0:
-            self.__cal_o = db["cal"].find({"start":{"$gt":start,"$lt":end}})
-        else:
-            raise ValueError
-        self.__my_init()
-
-    def __iter__(self):
-        return self.__cal.__iter__()
-    def __len__(self):
-        return  self.__cal.count()
-    def pagination(self,skip,limit=10):
-        return self.pure_dict()[skip:skip+limit]
-    def pure_dict(self):
-            """  convert all the ObjectId to string in the customer list
-            """
-            return self.__cal_pure
-
-
-class contract:
-    def __init__(self,contract):
-        if type(contract) == ObjectId:
-            db = get_db()
-            self.__contract = db["contract"].find_one({"_id":contract})
-        elif type(contract) == unicode:
-            db = get_db()
-            self.__contract = db["contract"].find_one({"_id":ObjectId(contract)})
-        elif type(contract) ==dict:
-            self.__contract = contract
-        else:
-            self.__contract ={}
-        self.__contract["contract_project"] = project(self.__contract["contract_project_id"])["project_name"]
-    def __getattr__(self, item):
-            return self.__contract[item]
-    def __getitem__(self, item):
-        return self.__contract[item]
-    def __setitem__(self, key, value):
-        self.__contract[key] = value
-    def save(self):
-        return db["contract"].save(self.__contract)
-    def get_pure_dict(self):
-        return uti.get_pure_dict(self.__contract)
-
-class contract_list:
-    def __init__(self,customer_id="",start=0,end=0):
-        if customer_id !="":
-            customer_id = ObjectId(customer_id)
-            self.__contracts_o = db["contract"].find({"user_id":customer_id})
-        elif start != 0:
-            self.__contracts_o = db["contract"].find({"date":{"$gt":start,"$lt":end}})
-
-        self.__contracts_pure = []
-        self.__contracts = []
-        for i in self.__contracts_o:
-            self.__contracts.append(contract(i))
-        for c in self.__contracts:
-            self.__contracts_pure.append(c.get_pure_dict())
-
-
-    def __iter__(self):
-        return self.__contracts.__iter__()
-    def __len__(self):
-        return  self.__contracts.count()
-    def pagination(self,skip,limit=10):
-        return self.pure_dict()[skip:skip+limit]
-    def pure_dict(self):
-        """  convert all the ObjectId to string in the customer list
-        """
-        return self.__contracts_pure
-
-
-
-class project:
+class memorial(BaseDocument):
+    objects = calQuery()
     def __init__(self,c):
-        if type(c) == dict:
-            self.__project = c
-        elif type(c) == ObjectId:
-            db = get_db()
-            self.__project = db["project"].find_one({"_id":c})
-        elif type(c) == unicode:
-            db = get_db()
-            self.__project = db["project"].find_one({"_id":ObjectId(c)})
-        else:
-            self.__project = {}
-    def __getattr__(self, item):
-        return self.__project[item]
-    def __getitem__(self, item):
-        return self.__project[item]
-    def __setitem__(self, key, value):
-        self.__project[key] = value
+        self._collection = "cal"
+        super(memorial,self).__init__(c)
 
-    def save(self):
-        return db["project"].save(self.__project)
-    def get_pure_dict(self):
-        return uti.get_pure_dict(self.__project)
+    def calculate(self):
+        t = time.localtime(int(self._doc["start"]))
+        self._doc["start_date"] = uti.time_convert_to_utc_date(self._doc["start"])
+        tt = time.localtime().tm_year +" " + t.tm_mon + " " + t.tm_mday
+        self._doc["this_year_date"] = int( time.mktime( time.strptime(tt,"%Y %m %d") ))
+
+    def have_done(self):
+        self._doc["is_ok"] = "true"
+        self.save()
+    def do_not_done(self):
+        self._doc["is_ok"] = "false"
+        self.save()
+
+class contract(BaseDocument):
+    objects = contractQuery()
+    def __init__(self,contract):
+        self._collection = "contract"
+        super(contract,self).__init__(contract)
+
+    def calculate(self):
+        self._doc["contract_project"] = project(self._doc["contract_project_id"])["project_name"]
+
+
+
+
+class project(BaseDocument):
+    def __init__(self,p):
+        self._collection = "project"
+        super(project,self).__init__(p)

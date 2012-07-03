@@ -75,6 +75,37 @@
 {% endblock %}
 
 {% block js %}
+<script type="text/x-jqote-template" id="template">
+    <![CDATA[
+    <tbody>
+    <% if ( this.list.length > 0 ) { %>
+        <% for (i in this.list) %>
+            <tr>
+                <td><%= i %></td>
+                <td><a class='btn_add' href='#'><%= this.list[i].type %> </a></td>
+                <td><a class='btn_add' href='#'><%= this.list[i].company %> </a></td>
+                <td><a class='btn_name' href='/customer/<%= this.list[i]._id %>'><%= this.list[i].name %>(<%=this.list[i].gender%>)</a> </td>
+                <td><a class='btn_add' href='#'><%= this.list[i].sector %></a></td>
+                <td><a class='btn_add' href='#'><%= this.list[i].vocation %> </a></td>
+                <td><%=this.list[i].contact_record%></td>
+                <td><%=this.list[i].amount%></td>
+            </tr>
+        <% ; %>
+    <% } %>
+    </tbody>
+    ]]>
+</script>
+<!--
+html = "<tbody>"
+                for(var i=0;i<data.total;i++){
+                    h = "<tr><td>"+(i+1)+ "</td><td><a class='btn_add' href='#'>"+l[i].type + "</a></td><td><a class='btn_add' href='#'>"+l[i].company+"</a></td><td><a class='btn_name' ";
+                    h += "href='/customer/"+l[i]._id+"'>" +l[i].name;
+                    h += "("+l[i].gender +")</a></td><td><a class='btn_add' href='#'>"+l[i].sector+"</a></td><td><a class='btn_add' href='#'>"+l[i].vocation+"</a></td><td>";
+                    h += l[i].contact_record +"</td><td>"+ l[i].amount +"</td></tr>";
+                    html +=h;
+                }
+                html+="</tbody>";
+-->
 <script>
     var page_now =1;
     var pages;
@@ -95,17 +126,7 @@
             data: {'page':page,'query':query} ,
             dataType:'json',
             success: function(data) {
-                var l=data.list;
-                html = "<tbody>"
-                for(var i=0;i<data.total;i++){
-                    h = "<tr><td>"+(i+1)+ "</td><td><a class='btn_add' href='#'>"+l[i].type + "</a></td><td><a class='btn_add' href='#'>"+l[i].company+"</a></td><td><a class='btn_name' ";
-                    h += "href='/customer/"+l[i]._id+"'>" +l[i].name;
-                    h += "("+l[i].gender +")</a></td><td><a class='btn_add' href='#'>"+l[i].sector+"</a></td><td><a class='btn_add' href='#'>"+l[i].vocation+"</a></td><td>";
-                    h += l[i].contact_record +"</td><td>"+ l[i].amount +"</td></tr>";
-                    html +=h;
-                }
-                html+="</tbody>";
-                $('#customer_list tbody').replaceWith(html);
+                $('#customer_list tbody').replaceWith($('#template').jqote(data));
                 var view ="<span id='view'>View "+data.now+" of "+data.total+"</span";
                 $('#view').replaceWith(view);
                 pages = data.pages;

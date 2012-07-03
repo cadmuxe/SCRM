@@ -20,6 +20,7 @@ class settings():
 
 @app.before_request
 def before_request():
+    g.dbs = dbs
     g.db = dbs.get_db()
     g.settings = settings()
     g.myjsonify = uti.myjsonify
@@ -34,13 +35,10 @@ def api(type,action):
     a = g.db["settings"].find_one({"type":"sector"})
     return uti.myjsonify(a)
 
-@app.route('/api/tags/<tag_type>/tag_name/<action>/',methods=['GET'])
+@app.route('/api/tags/<tag_type>/<tag_name>/<action>/',methods=['GET'])
 def api_tags(tag_type,tag_name,action):
     if action == 'add':
-        dbs.tags_update_add(tag_type,tag_name)
-        return "OK"
-    if action == 'sub':
-        dbs.tags_update_sub(tag_type,tag_name)
+        dbs.tags(tag_type).add_tag(tag_name)
         return "OK"
 
 @app.route('/api/customer/<query>')
@@ -50,9 +48,16 @@ def api_customer_token(query):
 @app.route('/api/customer/add',methods=['POST'])
 def api_customer_add():
     if request.method == 'POST':
-        customer = request.json
-        dbs.customer.insert_new(customer)
+        customer = dbs.customer(request.json).save()
+        customer.insert_birthday(customer["birthday"]).save()
         return str(customer)
+    return "ok"
+
+@app.route('/api/cal/add',methods=['POST'])
+def api_cal_add():
+    if request.method == 'POST':
+        cal = dbs.cal(request.json).save()
+        print request.json
     return "ok"
 
 @app.route('/api/customer/list',methods=['POST'])
@@ -60,10 +65,10 @@ def api_customer_list():
     if request.method == 'POST':
         each_page = 10              # how many items in each page
         page_now = request.form['page']
-        list = dbs.customer_list({"manager":session['_id']},
+        list = dbs.customer.objects.search({"manager":ObjectId(session['_id'])},
                 request.form['query'],
                 ["name","type","gender","company","sector","vocation"],
-                ["_id","name","type","gender","company","sector","vocation","amount","contact_record"])
+                )
 
         total = list.count()
         p = total %10
@@ -75,14 +80,16 @@ def api_customer_list():
             page_now =pages
         if page_now < 1:
             page_now =1
-        list= list.pagination( (page_now-1)*each_page,each_page)
+        list= list.skip((page_now-1)*each_page).limit(each_page)
         if pages == 0:
             now = 0
             noww = 0
         else:
             now = (page_now-1)*each_page+1
             noww = (page_now-1)*each_page + len(list)
-        r = {"total":total,"now":str(now)+'-'+str(noww),"pages":pages,"page_now":page_now,"list":list }
+        r = {"total":total,"now":str(now)+'-'+str(noww),"pages":pages,"page_now":page_now,
+             "list":list.get_python(["_id","name","type","gender","company","sector","vocation","amount","contact_record"]) }
+        print r
         return uti.myjsonify(r)
 
     return "ok"
@@ -109,19 +116,21 @@ def customer(uid):
     print uid
     print type(uid)
     customer = dbs.customer(uid)
-    contacts =dbs.cal_list(uid)
-    contracts = dbs.contract_list(uid)
+    contacts =dbs.cal.objects.find_by_attend(uid)
+    contracts = dbs.contract.objects.find_by_customer_id(uid)
     customer_id_list = dbs.get_json_customer_and_id_list()
-    return r_t('customer.html',customer=customer.get_pure_dict(),
-        contacts=contacts.pure_dict(),
-        contracts=contracts.pure_dict(),
+
+    return r_t('customer.html',customer=customer.get_python(),
+        contacts=contacts.get_python(),
+        contracts=contracts.get_python(),
         customer_id_list = customer_id_list
     )
 
 @app.route('/customer_add',methods=['GET','POST'])
 def customer_add():
     if request.method == 'GET':
-        return r_t('customer_add.html')
+        customer_id_list = dbs.get_json_customer_and_id_list()
+        return r_t('customer_add.html',customer_id_list = customer_id_list)
     else:
         print request.data
         return "go"

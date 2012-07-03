@@ -94,8 +94,6 @@
                                             <a class="btn btn-primary btn-mini" id="btn_like_add" href="">添加</a>
                                             <div id="likes">
                                                 <ul class="unstyled">
-                                                    <li><a class="btn_remove" href="" tdata='体育'><i class="icon-remove"></i></a>体育</li>
-                                                    <li><a class="btn_remove" href="" tdata='歌曲'><i class="icon-remove"></i></a>歌曲</li>
                                                 </ul>
                                             </div>
                                         </div>
@@ -109,8 +107,6 @@
                                             <a class="btn btn-primary btn-mini" id="btn_wish_add" href="">添加</a>
                                             <div id="wishs">
                                                 <ul class="unstyled">
-                                                    <li><a class="btn_remove" href="" tdata='孙女想要一个小王冠'><i class="icon-remove"></i></a>孙女想要一个小王冠 </li>
-                                                    <li><a class="btn_remove" href="" tdata='听王菲演唱会'><i class="icon-remove"></i></a>听王菲演唱会 </li>
                                                 </ul>
                                             </div>
                                         </div>
@@ -200,9 +196,9 @@
 
 {% block js %}
 <script>
-    var sector = {{g.myjsonify(g.db["settings"].find_one({"type":"sector"}))|safe}};
-    var vocation = {{g.myjsonify(g.db["settings"].find_one({"type":"vocation"}))|safe}};
-    var likes = {{g.myjsonify(g.db["settings"].find_one({"type":"likes"}))|safe}};
+    var sector = {{g.dbs.tags("sector").get_json()|safe}};
+    var vocation = {{g.dbs.tags("vocation").get_json()|safe}};
+    var likes = {{g.dbs.tags("likes").get_json()|safe}};
     
     var customer={likes:[],wishs:[]};
     
@@ -211,9 +207,9 @@
       /*
        matcher:mymatch
        */
-      $('#sector').typeahead({source:sector.value,items:5,matcher:mymatcher});
-      $('#vocation').typeahead({source:vocation.value,items:5,matcher:mymatcher});
-      $('#likes').typeahead({source:likes.value,items:5,matcher:mymatcher});
+      $('#sector').typeahead({source:sector,items:5,matcher:mymatcher_t});
+      $('#vocation').typeahead({source:vocation,items:5,matcher:mymatcher_t});
+      $('#likes').typeahead({source:likes,items:5,matcher:mymatcher_t});
       
    /* $('.mydata').bind({
                             dblclick:function(){
@@ -284,11 +280,13 @@
                                     return false;
                                     });
       $('#btn_socials_add').click( function(){
-                                    var new_relevant = $('#social_o').clone();
-                                    new_relevant.append('<a class="btn_remove_f" href="#"><i class="icon-minus-sign"></i></a>');
-                                    new_relevant.appendTo($('#socials'));
+                                    var new_s = $('#social_o').clone();
+                                    new_s.append('<a class="btn_remove_f" href="#"><i class="icon-minus-sign"></i></a>');
+                                    new_s.appendTo($('#socials'));
                                     return false;
                                     });
+
+
       $('.btn_remove_f').live("click",function(){
                               $(this).parent().remove();
                               return false;

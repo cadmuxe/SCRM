@@ -81,6 +81,9 @@ function mymatcher (item,query){
     return matcherpy(item,query) || matchere(item,query);
 }
 
+function mymatcher_t (item){
+    return matcherpy(item,this.query) || matchere(item,this.query);
+}
 
 (function ($) {
 // Default settings
