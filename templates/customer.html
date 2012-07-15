@@ -84,10 +84,16 @@
                 </div>
                 <div class="span2">
                     <div>
-                        <a class="btn btn-success" data-toggle="modal" href="#myModal">
-                            <i class="icon-pencil icon-white"></i> 记录活动
-                        </a>
-
+                        <p>
+                            <a class="btn btn-success" data-toggle="modal" href="#Modal_cal">
+                                <i class="icon-calendar icon-white"></i> 记录活动
+                            </a>
+                        </p>
+                        <p>
+                            <a class="btn btn-primary" data-toggle="modal" href="#Modal_contract">
+                                <i class="icon-file icon-white"></i> 记录合同
+                            </a>
+                        </p>
                     </div>
 
                 </div>
@@ -177,61 +183,39 @@
     </div>
 </div>
 
-<div class="modal hide fade" id="myModal">
+<div class="modal hide fade" id="Modal_cal">
     <div class="modal-header">
         <button type="button" class="close" data-dismiss="modal">×</button>
         <h3>记录活动</h3>
     </div>
     <div class="modal-body">
-        <form class="form-horizontal">
+    {% import 'forms.html' as forms with context%}
+        {{forms.cal( customer)}}
 
-            <p>
-                <input type="text" class="input-large" placeholder="无标题活动" id="contact_title">
-            </p>
-            <p><input type="text" class="input-small datepicker" id="contact_start_date">
-                <input type="text" class="input-mini" id="contact_start_time">
-                至<input type="text" class="input-small datepicker" id="contact_end_date">
-                <input type="text" class="input-mini" id="contact_end_time">
-            </p>
-            <p>
-                <label class="checkbox inline">
-                    <input type="checkbox" id="inlineCheckbox1" value="option1"> 全天
-                </label>
-                <label class="checkbox inline">
-                    <input type="checkbox" id="inlineCheckbox2" value="option1"> 重复
-                </label>
-                <label class="checkbox inline">
-                    <input type="checkbox" id="inlineCheckbox3" value="option1"> 提醒
-                </label>
-            </p>
-            <hr>
-            <h4>活动详情</h4>
-            <div class="row">
-                <div class="span3">
-
-                    <p>地点<input type="text" class="input-small"  id="contact_location"></p>
-                    <p>
-                        类型 <select class="input-small" id="contact_type" name="contact_type">
-                        <option>电话</option>
-                    </select>
-                        花费<input class="input-mini"  id="contact_spend"  type="text">
-                    </p>
-                </div>
-                <div class="span2">
-                    <p>标签</p>
-
-                </div>
-            </div>
-            <p>参与人<input class="input-xlarge" type="text" id="contact_attend"></p>
-            <hr>
-            <p>说明</br><textarea type="text" class="input-xlarge"  id="contact_remark"></textarea></p>
-        </form>
     </div>
     <div class="modal-footer">
         <a href="#" class="btn" data-dismiss="modal">Close</a>
         <a href="#" class="btn btn-primary" id="btn_add_cal">添加</a>
     </div>
 </div>
+
+
+<div class="modal hide fade" id="Modal_contract">
+    <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal">×</button>
+        <h3>记录合同</h3>
+    </div>
+    <div class="modal-body">
+        {% import 'forms.html' as forms with context%}
+        {{forms.contract( customer)}}
+
+    </div>
+    <div class="modal-footer">
+        <a href="#" class="btn" data-dismiss="modal">Close</a>
+        <a href="#" class="btn btn-primary" id="btn_add_contract">添加</a>
+    </div>
+</div>
+
 {% endblock %}
 
 
@@ -241,79 +225,23 @@
 
 
 {% block js %}
-<script type="text/javascript" src="/static/js/jquery.timePicker.min.js"></script>
 <script>
-    var cal={};
     $(function() {
-        var tn = new Date()
-        var s = tn.getFullYear().toString() + '-' + tn.getMonth().toString() + '-' + tn.getDate().toString();
-        $(".datepicker").val(s);
-        $("#contact_start_time").val((tn.getHours()+1).toString() + ":00");
-        $("#contact_end_time").val((tn.getHours()+2).toString() + ":00");
-        $( ".datepicker" ).datepicker({ dateFormat: "yy-mm-dd" });
-        $('#myModal').modal();
+        $('#Modal_cal').modal('hide');
+    });
 
-
-        $("#contact_start_time, #contact_end_time").timePicker({
-                show24Hours: true,
-                separator: ':',
-                step: 30}
-        );
-        var oldTime = $.timePicker("#contact_start_time").getTime();
-        $("#contact_start_time").change(function() {
-            if ($("#contact_end_time").val()) {
-                var duration = ($.timePicker("#contact_end_time").getTime() - oldTime);
-                var time = $.timePicker("#contact_start_time").getTime();
-                $.timePicker("#contact_end_time").setTime(new Date(new Date(time.getTime() + duration)));
-                oldTime = time;
+    $('#btn_add_cal').click(function(){
+        var cal = get_cal();
+        var request = $.ajax({
+            type: "POST",
+            url: "/api/cal/save",
+            contentType:"application/json",
+            data: JSON.stringify(cal),
+            success: function(data) {
             }
         });
-
-        var customer_tags= {{customer_id_list|safe}};
-        $( "#contact_attend" ).tokenInput(customer_tags,
-            {
-                theme: "facebook",
-                searchDelay:100,
-                prePopulate:[{id:"{{customer['_id']|safe}}",name:"{{customer['name']|safe}}"}]
-            }
-        );
-        $( "#selectable" ).selectable();
-        $("#btn_add_cal").click(function(){
-            cal.type = "事务";
-            cal.manager = "{{ session['_id'] }}";
-            var tokens = $( "#contact_attend" ).tokenInput('get');
-            var attend = []
-            for (var i= 0; i< tokens.length;i++){
-                attend.push(tokens[i].id);
-            }
-            cal.attend = attend;
-            cal.title = $("#contact_title").val();
-            t_start = new Date($("#contact_start_date").val() + " " + $("#contact_start_time").val());
-            cal.start = Math.floor(t_start.getTime()/1000);
-            t_end = new Date($("#contact_end_date").val() + " " + $("#contact_end_time").val());
-            cal.end = Math.floor(t_end.getTime()/1000);
-            cal.location = $("#contact_location").val();
-            cal.contact_type = $('#contact_type option:selected').val();
-            cal.spending = $("#contact_spend").val();
-            cal.remark = $("#contact_remark").val();
-            var n = new Date();
-            if (cal.start < (n.getTime()/1000-3600)){
-                cal.is_ok = true;
-            }
-            else{
-                cal.is_ok = false;
-            }
-
-            var request = $.ajax({
-                type: "POST",
-                url: "/api/cal/add",
-                contentType:"application/json",
-                data: JSON.stringify(cal),
-                success: function(data) {
-                }
-            });
-            return false;
-        });
+        $('#Modal_cal').modal('hide');
+        return false;
     });
  </script>
 {% endblock %}

@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Index{% endblock %}
+
+<!-- Css -->
+{% block css %}
+<style>
+</style>
+<link href="/static/css/fullcalendar.css" rel="stylesheet" type="text/css">
+{% endblock %}
+
+<!-- ++++++++++++Content+++++++++++++ -->
+{% block content %}
+<div class="container">
+    <div id='calendar'></div>
+</div>
+{% endblock %}
+
+
+{% block js %}
+<script type="text/javascript" src="/static/js/fullcalendar.min.js"></script>
+<script>
+    $('#calendar').fullCalendar({
+        header:{
+            left:'prev,next today',
+            center:'title',
+            right:'month,agendaWeek,agendaDay'
+        },
+        editable:true,
+        height:550,
+        eventSources: [
+            {url:"/api/cal",allDayDefault:false,editable:true},
+            {url:"/api/memorial",allDayDefault:true,editable:false}]
+
+    });
+</script>
+{% endblock %}

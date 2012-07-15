@@ -40,6 +40,7 @@
                         <form class="form-inline myform" action=""> 
                             <div class="row well">
                                 <div class="span3">
+
                                     <div class="control-group">
                                         <input type="text" class="input-medium mydata" id="name" placeholder="客户姓名">
                                     </div>
@@ -124,7 +125,7 @@
                                         <input type="text" class="input-small mydata r_name" placeholder="姓名">
                                         <select class="span1 r_relation">
                                             <option value="">关系</option>
-                                            {% for i in g.db["settings"].find_one({"type":"relation_h"}).value %}
+                                            {% for i in g.dbs.tags("relation_h").get_tags() %}
                                             <option value="{{i|safe}}">{{i|safe}}</option>
                                             {% endfor %}
                                         </select>  
@@ -142,7 +143,7 @@
                                         <input type="text" class="input-small mydata s_name" placeholder="姓名">
                                         <select class="span2 s_relation">
                                             <option value="">关系</option>
-                                            {% for i in g.db["settings"].find_one({"type":"relation_s"}).value %}
+                                            {% for i in g.dbs.tags("relation_s").get_tags() %}
                                             <option value="{{i|safe}}">{{i|safe}}</option>
                                             {% endfor %}
                                         </select>
@@ -159,7 +160,7 @@
                                      -->
                                     <select class="span2" id="channel">
                                             <option value="">来源渠道</option>
-                                            {% for i in g.db["settings"].find_one({"type":"channel"}).value %}
+                                            {% for i in g.dbs.tags("channel").get_tags() %}
                                             <option value="{{i|safe}}">{{i|safe}}</option>
                                             {% endfor %}
                                     </select>
@@ -300,8 +301,8 @@
             if (t != ""){
                 t = t.split("-");
                 t[1]-=1;
-                date = new Date(t[0],t[1],t[2]);
-                customer.birthday = Math.floor(date.getTime()/1000);   //服务器端转换成单独记录，存放id
+                var bday =  Date.UTC(t[0],t[1],t[2]);
+                customer.birthday = Math.floor(bday/1000);   //服务器端转换成单独记录，存放id
             }
             else {customer.birthday = 0;}
             customer.sector = $('input#sector').val();

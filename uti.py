@@ -23,10 +23,10 @@ def get_pure_dict(dic):
 
 
 def time_convert_to_utc_date(epoch):
-    t = time.localtime(int(epoch))
+    t = time.gmtime(int(epoch))
     return str(t.tm_year) + "-"+ str(t.tm_mon) + "-"+str(t.tm_mday)
 def time_convert_to_utc_time(epoch):
-    t = time.localtime(int(epoch))
+    t = time.gmtime(int(epoch))
     return str(t.tm_hour) + ':' + str(t.tm_min)
 def print_dict(dic):
     for i in dic:
