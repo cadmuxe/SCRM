@@ -1,7 +1,7 @@
 #-*- coding:utf-8 -*-
 import pymongo, myjson_util, json, pymongo.cursor,time
 from bson.objectid import ObjectId
-import uti
+import uti,calendar,datetime,copy
 
 def get_db():
     """return 'fanfan_crm' db
@@ -18,6 +18,31 @@ def get_json_customer_and_id_list():
     for c in list:
         l.append({'name':c["name"],'id':c["_id"]})
     return uti.myjsonify(l)
+
+def get_json_working_project_list():
+    list = project.objects.get_working_project_list().get_python(['project_name'])
+    l =[]
+    for i in list:
+        l.append(i['project_name'])
+    return uti.myjsonify(l)
+
+def get_json_time_period():
+    t = datetime.datetime.today()
+    tt = datetime.datetime(t.year,t.month,t.day).timetuple()
+    today = (int(time.mktime(tt)))
+    return {'today':(today, today + 86400),'tomorrow':(today + 86400, today + 172800)}
+def get_datetime_period():
+    t = datetime.datetime.today()
+    t1 = datetime.datetime(t.year,t.month,t.day)
+    t2 = datetime.datetime(t.year,t.month,t.day+1)
+    t3 = datetime.datetime(t.year,t.month,t.day+2)
+    return {'today':(t1, t2),'tomorrow':(t2, t3)}
+def get_datetime_from_stamp(s):
+    s = int(s)
+    t = time.localtime(s)
+    d = datetime.datetime(t.tm_year,t.tm_mon,t.tm_mday,t.tm_hour,t.tm_min,t.tm_sec)
+    return d
+
 
 
 class tags:
@@ -47,6 +72,8 @@ class tags:
             self.__search = {'collection':'cal','field':'cal_type'}
         elif type == 'cal_tags':
             self.__search = {'collection':'cal','field':'tags'}
+        elif type == 'contact_type':
+            self.__search = {'collection':'cal','field':'contact_type'}
         else:
             raise ValueError
     def get_tags(self):
@@ -105,7 +132,7 @@ def mongo_find(col,query, selection={},keys="",field_search=[]):
 
 
 class querySet:
-    def __init__(self,collection,oset):
+    def __init__(self,collection,oset=[]):
         self.__collection = collection
         self.__sets = []
         self.__doc_class = globals()[collection]
@@ -115,8 +142,11 @@ class querySet:
         else:
             self.__sets = oset
 
-    def enlargeSet(self,set):
-        self.__sets += set
+    def enlargeSet(self,document):
+        if isinstance(document,self.__doc_class) == False:
+            raise ValueError
+        else:
+            self.__sets.append(document)
     def count(self):
         return len(self.__sets)
     def get_json(self,selection=[]):
@@ -164,20 +194,23 @@ class BaseDocument(object):
     def __init__(self,d):
         if type(d) == dict:
             self._doc = myjson_util.object_hook(d)
+        elif d is None:
+            raise ValueError
         else:
             try:
+                print self._collection
                 self._doc = db[self._collection].find_one({"_id":ObjectId(d)})
             except:
                 print "Error"
                 raise ValueError
         self.__json_helper={}
+        self.calculate()
 
 
     def save(self):
         if self._doc.has_key("_id"):
             self.calculate()
             db[self._collection].save(self._doc)
-            print "go"
         else:
             db[self._collection].save(self._doc)
             self.save()
@@ -198,7 +231,10 @@ class BaseDocument(object):
         if selection == []:
             selection =  self._doc.keys()
         for field in selection:
-            self.__json_helper[field]=self._doc[field]
+            try:
+                self.__json_helper[field]=self._doc[field]
+            except :
+                self.__json_helper[field]= None
     def get_json(self,selection=[]):
         """
         """
@@ -235,18 +271,21 @@ class BaseQuery():
         query:      pymongo style query,
         selection:  pymongo style selection
         field_search:    ["name","company"..] field to be searched
-        dbs.customer_find({"manager":session['_id'],"$or":query,..},
+        dbs.customer_find({"manager":session['_id'],"$and":[{"$or":[{field:{"regex":"key"}}]}]},
                     {'_id':1,'name':1,'type':1,'gender':1,"company":1,"sector":1,"vocation":1,..})
         same as the g.db["customer"].find()
         """
         if keys != "" or field_search !=[]:
             q_or=[]
+            q_and=[]
             keys = keys.split(' ')
             for k in keys:
                 k = '.*'+k+'.*'
+                q_or =[]
                 for  f in field_search:
                     q_or.append({f:{"$regex":k}})
-            query["$or"]= q_or
+                q_and.append({'$or':q_or})
+            query["$and"]= q_and
         print query
         return  self.find(query)
 
@@ -254,22 +293,32 @@ class customerQuery(BaseQuery):
     def __init__(self):
         self._collection = "customer"
 
+    def not_contact_list(self):
+        cursor = db[self._collection].find({"how_long":{"$gte":10}}).sort("how_long",pymongo.DESCENDING)
+        return querySet(self._collection,cursor)
+
 class calQuery(BaseQuery):
     def __init__(self):
         self._collection = "cal"
 
     def find_by_attend(self,uid):
-        cursor = db[self._collection].find({"attend":ObjectId(uid),"type":u"事务"}).sort("start", pymongo.DESCENDING)
+        cursor = db[self._collection].find({"attend.id":ObjectId(uid),"type":u"事务"}).sort("start", pymongo.DESCENDING)
         return querySet(self._collection,cursor)
     def find_by_period(self,start,end):
-        start = int(start)
-        end = int(end)
+        """
+        start, end : datetime type
+        """
         cursor = db[self._collection].find({"start":{"$gte":start,"$lte":end},"type":u"事务"}).sort("start", pymongo.DESCENDING)
         return querySet(self._collection,cursor)
-    def not_contact_list(self):
 
+    def find_by_period_ascend(self,start,end):
+        """
+        start, end : datetime type
+        """
+        cursor = db[self._collection].find({"start":{"$gte":start,"$lte":end},"type":u"事务"}).sort("start", pymongo.ASCENDING)
+        not_done = db[self._collection].find({"start":{"$gte":start,"$lte":end},"type":u"事务","finished":False}).count()
+        return (not_done,querySet(self._collection,cursor))
 
-        raise ValueError
 
 class memorialQuery(BaseQuery):
     def __init__(self):
@@ -278,10 +327,19 @@ class memorialQuery(BaseQuery):
         cursor = db[self._collection].find({"user_id":ObjectId(uid)})
         return querySet(self._collection,cursor)
     def find_by_period(self,start,end):
-        start = int(start)
-        end = int(end)
-        cursor = db[self._collection].find({"this_year_start":{"$gte":start,"$lte":end}})
-        return querySet(self._collection,cursor)
+        """
+        start, end datetime type
+        """
+        search_helper_start =  start.replace(year = datetime.datetime.today().year)
+        search_helper_end = end.replace(year = datetime.datetime.today().year)
+        cursor = db[self._collection].find({"this_year_start":
+                                                    {"$gte":search_helper_start,"$lte":search_helper_end}})
+        set = querySet(self._collection)
+        for i in cursor:
+            mm = memorial(i)
+            mm.set_calculate_year(start.year)
+            set.enlargeSet(mm)
+        return set
 
 class contractQuery(BaseQuery):
     def __init__(self):
@@ -290,47 +348,60 @@ class contractQuery(BaseQuery):
         cursor = db[self._collection].find({"user_id":ObjectId(uid)})
         return querySet(self._collection,cursor)
 
+class projectQuery(BaseQuery):
+    def __init__(self):
+        self._collection = 'project'
+    def get_working_project_list(self):
+        cursor = db[self._collection].find({'working':True})
+        return querySet(self._collection,cursor)
+    def find_by_project_name(self,project_name):
+        p = db[self._collection].find_one({'project_name':project_name})
+        try:
+            return project(p)
+        except :
+            return False
+
 class customer(BaseDocument):
     objects = customerQuery()
     def __init__(self,d):
         self._collection = "customer"
         super(customer,self).__init__(d)
+        self.save()
 
     def __get_customer_total_contract_amount(self):
         """ get customer's totally contract amount
         """
         amount = 0
-        list = db["contract"].find({"_id":self._doc["_id"]})
+        list = db["contract"].find({"user_id":self._doc["_id"]})
         for c in list:
             amount += int(c["amount"])
         return amount
-
     def calculate(self):
         if self._doc.has_key('_id') == False:
             self.save()
         self._doc["amount"] = self.__get_customer_total_contract_amount()
         try:
-            contact_record = cal.objects.find_by_attend(self._doc["_id"])[0]
+            contact_record = db['cal'].find({"attend.id":self._doc['_id'],"type":u"事务"}).sort("start", pymongo.DESCENDING)[0]
             self._doc["contact_record"] = contact_record["_id"]
         except:
             pass
         if self._doc.has_key("contact_record"):
             start = cal(self._doc["contact_record"])["start"]
-            self._doc["how_long"] = int((time.time()-start)/86400)
+            self._doc["how_long"] = (datetime.datetime.today() - start).days
         else:
-            self._doc["how_long"] = 1000
+            self._doc["how_long"] = 10000
         return self
 
     def get_readable_python(self,selection=[]):
         d = self.get_python(selection)
         if d.has_key("contact_record"):
             try:
-                d["contact_record"] = cal(self._doc["contact_record"])["start_date"]
+                d["contact_record"] = cal(self._doc["contact_record"])["start"]
             except :
                 d["contact_record"] = "无联系记录"
         if d.has_key("birthday"):
             try:
-                d["birthday"] = memorial(self._doc["birthday"])["start_date"]
+                d["birthday"] =  memorial(self._doc["birthday"])["start"].strftime('%Y-%m-%d')
             except :
                 d["birthday"] = "无记录"
         return d
@@ -339,7 +410,9 @@ class customer(BaseDocument):
         """ Insert customer to dbs, customer is a dict object
         replace the birthday with the memorial_id.
         return customer_id
+        time: must be a datetime
         """
+
         if self._doc.has_key("_id") == False:
             raise ValueError
         birthday = {"type":"birthday",
@@ -372,30 +445,47 @@ class cal(BaseDocument):
         self._collection = "cal"
         super(cal,self).__init__(c)
 
-    def calculate(self):
-        self._doc["start_date"] = uti.time_convert_to_utc_date(self._doc["start"])
-        self._doc["start_time"] = uti.time_convert_to_utc_time(self._doc["start"])
-        self._doc["end_date"] = uti.time_convert_to_utc_date(self._doc["end"])
-        self._doc["end_time"] = uti.time_convert_to_utc_time(self._doc["end"])
 
+    def calculate(self):
+        l=[]
+        for i in self._doc['attend']:
+            i['name'] = db['customer'].find_one(i['id'])['name']
     def have_done(self):
         self._doc["is_ok"] = "true"
         self.save()
     def do_not_done(self):
         self._doc["is_ok"] = "false"
         self.save()
+    def get_readable_python(self,selection=[]):
+        d = self.get_python(selection)
+        if d.has_key("start"):
+            d["start"] = uti.time_datetime_to_string_datetime(d["start"])
+        if d.has_key("end"):
+            d["end"] = uti.time_datetime_to_string_datetime(d["end"])
+        return d
 
 class memorial(BaseDocument):
     objects = memorialQuery()
     def __init__(self,c):
         self._collection = "memorial"
+        self.__this_year = 0
         super(memorial,self).__init__(c)
 
+    def set_calculate_year(self,year):
+        self.__this_year = year
+        self.calculate()
     def calculate(self):
-        t = time.gmtime(int(self._doc["start"]))
-        self._doc["start_date"] = uti.time_convert_to_utc_date(self._doc["start"])
-        tt = str(time.gmtime().tm_year) +" " + str(t.tm_mon) + " " + str(t.tm_mday)
-        self._doc["this_year_start"] = int( time.mktime( time.strptime(tt,"%Y %m %d") ))
+        if self.__this_year == 0:
+            self.__this_year = datetime.datetime.today().year
+        d = self._doc["start"].replace(year = self.__this_year)
+        self._doc["this_year_start"] = d
+    def get_readable_python(self,selection=[]):
+        d = self.get_python(selection)
+        if d.has_key("start"):
+            d["start"] = uti.time_datetime_to_string_datetime(d["start"])
+        if d.has_key("this_year_start"):
+            d["end"] = uti.time_datetime_to_string_datetime(d["this_year_start"])
+        return d
 
     def have_done(self):
         self._doc["is_ok"] = "true"
@@ -406,17 +496,19 @@ class memorial(BaseDocument):
 
 class contract(BaseDocument):
     objects = contractQuery()
-    def __init__(self,contract):
+    def __init__(self,c):
         self._collection = "contract"
-        super(contract,self).__init__(contract)
+        super(contract,self).__init__(c)
 
     def calculate(self):
-        self._doc["contract_project"] = project(self._doc["contract_project_id"])["project_name"]
-
-
+        if project.objects.find_by_project_name(self._doc['contract_project']) == False:
+            project({'project_name':self._doc['contract_project']}).save()
 
 
 class project(BaseDocument):
+    objects = projectQuery()
     def __init__(self,p):
         self._collection = "project"
         super(project,self).__init__(p)
+    def calculate(self):
+        pass

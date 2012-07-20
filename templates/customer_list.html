@@ -79,7 +79,7 @@
     <![CDATA[
     <tbody>
     <% if ( this.list.length > 0 ) { %>
-        <% for (i in this.list) %>
+        <% for (i in this.list) { %>
             <tr>
                 <td><%= i %></td>
                 <td><a class='btn_add' href='#'><%= this.list[i].type %> </a></td>
@@ -90,7 +90,7 @@
                 <td><%=this.list[i].contact_record%></td>
                 <td><%=this.list[i].amount%></td>
             </tr>
-        <% ; %>
+        <% }  %>
     <% } %>
     </tbody>
     ]]>

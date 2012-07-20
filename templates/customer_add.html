@@ -299,10 +299,7 @@
             customer.gender = $('input[name=gender]:checked').val();
             t = $("input#birth").val();
             if (t != ""){
-                t = t.split("-");
-                t[1]-=1;
-                var bday =  Date.UTC(t[0],t[1],t[2]);
-                customer.birthday = Math.floor(bday/1000);   //服务器端转换成单独记录，存放id
+                customer.birthday = t;   //服务器端转换成单独记录，存放id
             }
             else {customer.birthday = 0;}
             customer.sector = $('input#sector').val();

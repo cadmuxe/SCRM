@@ -6,32 +6,374 @@
 <!-- Css -->
 {% block css %}
 <style>
+    .myblock{
+        margin-bottom: 20px;
+    }
+    .myscrollable{
+        min-height: 300px;
+    }
+    .myblock h2{
+        margin-bottom: 10px;
+    }
+    .dtext{
+        text-decoration : line-through ;
+    }
 </style>
+<link href="/static/css/my-todo-ui.css" rel="stylesheet" type="text/css">
 {% endblock %}
 <!-- ++++++++++++Content+++++++++++++ -->
 {% block content %}
 <div class="container">
-<h1>Fanfan CRM</h1>
-<p>
-"The submodules often need to refer to each other. For example, 
-the surround module might use the echo module.<br> 
-In fact, such references are so common that the import statement first looks in the containing 
-package before looking in the standard module search path. 
-<br>Thus, the surround module can simply use import echo or from echo import echofilter. 
-If the imported module is not found in the current package 
-(the package of which the current module is a submodule), 
-the import statement looks for a top-level module with the given name."
-</p>
-<p>
-The submodules often need to refer to each other. For example, the surround module might use the echo module. In fact, such references are so common that the import statement first looks in the containing package before looking in the standard module search path. Thus, the surround module can simply use import echo or from echo import echofilter. If the imported module is not found in the current package (the package of which the current module is a submodule), the import statement looks for a top-level module with the given name.
-</p>
+
+<div class="row">
+    <div class="span2">
+        <!--Sidebar content-->
+        <div class="" style="padding: 8px 0; margin-right:20px;">
+            <ul class="nav nav-pills nav-stacked myul">
+                <li class="nav-header">
+                    Todo List
+                </li>
+                <li class="myli">
+                    <a href="#" id="btn_inbox"><i class="icon-list"></i>收集箱 <strong>0</strong></a>
+                </li>
+                <li class="active myli">
+                    <a href="#" id="btn_today"><i class="icon-edit"></i>今日待办 <strong>0</strong></a>
+                </li>
+                <li class="myli">
+                    <a href="#" id="btn_tomorrow"><i class="icon-edit"></i>明日待办</a>
+                </li>
+            </ul>
+        </div>
+
+
+    </div>
+    <div class="span10">
+        <div class="myblock myscrollable">
+            <div>
+                <input type="text" class="input-xxlarge new-todo" id="new-todo" placeholder="What need to be done?">
+            </div>
+            <div id="inbox" style="display: none">
+                <ul></ul>
+            </div>
+            <div id="today">
+                <ul></ul>
+            </div>
+            <div id="tomorrow" style="display: none">
+                <ul></ul>
+            </div>
+            <div id="add_cal" style="display: none">
+                <button class="btn btn-small" id="btn_cal_back"><i class="icon-arrow-left"></i>放弃</button>
+                <button class="btn btn-danger" id="btn_cal_save">保存</button>
+                <button class="btn" id="btn_cal_delete">删除</button>
+                <hr>
+                {% import 'forms.html' as forms with context%}
+                {{forms.cal( )}}
+            </div>
+        </div>
+        <h3>Contact List</h3>
+        <table class="table table-striped" id="contact_list">
+            <thead>
+            <tr>
+                <th>#</th>
+                <th>公司</th>
+                <th>姓名</th>
+                <th>未通信天数</th>
+                <th>上次通信时间</th>
+                <th>累计合约</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+            </tr>
+            </tbody>
+        </table>
+
+    </div>
+
+</div>
+
+
+
+
+
+
 </div>
 {% endblock %}
 
 
 
 {% block js %}
+
+
+<script type="text/x-jqote-template" id="template-todo">
+    <![CDATA[
+    <ul class="unstyled todo-list">
+        <% if ( this.list.length > 0 ) { %>
+            <% for (l in this.list) { %>
+                <% if (this.list[l].finished == true ) { %>
+            <li data-id="<%= this.list[l]._id%>" class="completed" >
+                <input type="checkbox" class="toggle view" checked=true>
+                <% } else { %>
+            <li data-id="<%= this.list[l]._id%>" class="" >
+                <input type="checkbox" class="toggle view" >
+                <% } %>
+                <label class="text view"><%=this.list[l].start.split(' ')[1] %></label>
+                <input class="edit" value="<%= this.list[l].title %>">
+                <label class="text view" style="margin:0 0;"><%= this.list[l].title %></label>
+                <div class="destroy view"></div>
+            </li>
+            <% } %>
+        <% } else { %>
+            <li><label class="text">无下一步任务</label></li>
+        <% } %>
+    </ul>
+    ]]>
+</script>
+
+
+<script type="text/x-jqote-template" id="template-contact">
+    <![CDATA[
+    <tbody>
+    <% if ( this.list.length > 0 ) { %>
+    <% for (i in this.list) { %>
+    <tr>
+        <td><%= i %></td>
+        <td><%= this.list[i].company %> </td>
+        <td><a class='btn_name' href='/customer/<%= this.list[i]._id %>'><%= this.list[i].name %>(<%=this.list[i].gender%>)</a> </td>
+        <td><%= this.list[i].how_long %> </a></td>
+        <td><%=this.list[i].contact_record%></td>
+        <td><%=this.list[i].amount%></td>
+    </tr>
+    <% }  %>
+    <% } %>
+    </tbody>
+    ]]>
+</script>
+
+
+
 <script>
-$('.dropdown-toggle').dropdown()
+    var todo_data={};
+    todo_data.now="#today";
+
+    todo_data.fetch=function(){
+        var request = $.ajax({
+            type: "GET",
+            url: '/api/todo',
+            dataType:'json',
+            success: function(data) {
+                todo_data.inbox = data.inbox
+                todo_data.today = data.today
+                todo_data.tomorrow = data.tomorrow
+                todo_data.refresh();
+            }
+        });
+    }
+    todo_data.update_num=function(){
+        $('#btn_inbox strong').html(todo_data.inbox.not_done);
+        $('#btn_today strong').html(todo_data.today.not_done);
+    }
+    todo_data.update_num_add=function (){
+        if (todo_data.now == "#today"){
+            todo_data.today.not_done +=1;
+        }
+        if (todo_data.now == "#inbox"){
+            todo_data.inbox.not_done +=1;
+        }
+        todo_data.update_num();
+    }
+    todo_data.update_num_sub = function (){
+        if (todo_data.now == "#today"){
+            todo_data.today.not_done -=1;
+        }
+        if (todo_data.now == "#inbox"){
+            todo_data.inbox.not_done -=1;
+        }
+        todo_data.update_num();
+    }
+    todo_data.refresh=function(){
+        $('#today ul').replaceWith($('#template-todo').jqote(todo_data.today));
+        $('#tomorrow ul').replaceWith($('#template-todo').jqote(todo_data.tomorrow));
+        $('#inbox ul').replaceWith($('#template-todo').jqote(todo_data.inbox));
+        todo_data.update_num();
+    }
+    todo_data.insert=function(){
+        var cal=new_cal();
+        cal.title = $('#new-todo').val();
+        if(cal.title == ''){
+            return 'no'
+        }
+        if (todo_data.now == '#inbox'){
+            cal.start = "2000-1-1 05:04";
+            cal.end = cal.start;
+        }
+        else if (todo_data.now == '#today')
+        {
+            d = new Date();
+            s = d.toISOString().split('T');
+            t = d.toLocaleTimeString().split(':');
+            ss = s[0]+' '+ t[0] + ':' + t[1];
+            cal.start = ss;
+            cal.end = cal.start;
+        }
+        else if (todo_data.now == '#tomorrow')
+        {
+            d = new Date();
+            d.setDate(d.getDate()+1);
+            s = d.toISOString().split('T');
+            t = d.toLocaleTimeString().split(':');
+            ss = s[0]+' '+ t[0] + ':' + t[1];
+            cal.start = ss;
+            cal.end = cal.start;
+        }
+        var request = $.ajax({
+            type: "POST",
+            url: "/api/cal/save",
+            contentType:"application/json",
+            data: JSON.stringify(cal),
+            dataType:'json',
+            success: function(data) {
+                todo_data[todo_data.now.split('#')[1]].list.push(data);
+                todo_data.refresh();
+            }
+        });
+        $('#new-todo').val('');
+        return 'ok';
+    }
+    todo_data.find=function(id){
+        for(i in todo_data.inbox.list){
+            if(todo_data.inbox.list[i]['_id'] ==id){
+                return {list:'inbox',i:i}
+            }
+        }
+        for(i in todo_data.today.list){
+            if(todo_data.today.list[i]['_id'] ==id){
+                return {list:'today',i:i}
+            }
+        }
+        for(i in todo_data.tomorrow.list){
+            if(todo_data.tomorrow.list[i]['_id'] ==id){
+                return {list:'tomorrow',i:i}
+            }
+        }
+        return 'none'
+    }
+    todo_data.done= function(id){
+        var find=todo_data.find(id);
+        todo_data[find.list].list[i]['finished'] = true;
+        url = '/api/cal/'+id+'/done';
+        $.get(url);
+        todo_data.update_num_sub();
+    }
+    todo_data.not_done= function(id){
+        var find=todo_data.find(id);
+        todo_data[find.list].list[i]['finished'] = false;
+        url = '/api/cal/'+id+'/not_done';
+        $.get(url);
+        todo_data.update_num_add();
+    }
+    todo_data.update=function(cal){
+        var request = $.ajax({
+            type: "POST",
+            url: "/api/cal/save",
+            contentType:"application/json",
+            data: JSON.stringify(cal),
+            success: function(data) {
+                todo_data.fetch();
+            }
+        });
+        return 'ok';
+
+    }
+    todo_data.delete=function(id){
+        url = '/api/cal/'+id+'/delete';
+        $.get(url);
+        todo_data.fetch();
+    }
+    $(function(){
+        $('#inbox,#tomorrow,#add_cal').hide();
+        $('#today').show();
+        todo_data.fetch();
+        var request = $.ajax({
+            type: "GET",
+            url: "/api/customer/contact_list",
+            dataType:'json',
+            success: function(data) {
+                $('#contact_list tbody').replaceWith($('#template-contact').jqote(data));
+            }
+        });
+    });
+
+    $('#btn_inbox').click(function(){
+        $('#today,#tomorrow,#add_cal').hide(100);
+        $('#inbox').show('fast');
+        $('.myli').removeClass('active');
+        $(this).parent().addClass('active');
+        todo_data.now="#inbox";
+        return false;
+    });
+    $('#btn_today').click(function(){
+        $('#inbox,#tomorrow,#add_cal').hide(100);
+        $('#today').show('fast');
+        $('.myli').removeClass('active');
+        $(this).parent().addClass('active');
+        todo_data.now="#today";
+        return false;
+    });
+    $('#btn_tomorrow').click(function(){
+        $('#today,#inbox,#add_cal').hide(100);
+        $('#tomorrow').show(100);
+        $('.myli').removeClass('active');
+        $(this).parent().addClass('active');
+        todo_data.now="#tomorrow";
+        return false;
+    });
+    $('.todo-list .toggle').live('click',function(){
+        var thisCheck = $(this);
+        if (thisCheck.is (':checked'))
+        {
+            $(this).parent().addClass('completed');
+            var id = $(this).parent().data('id');
+            todo_data.done(id);
+        }
+        else{
+            $(this).parent().removeClass('completed');
+            var id = $(this).parent().data('id');
+            todo_data.not_done(id);
+        }
+    });
+    $('.todo-list li').live('dblclick',function(){
+        $(todo_data.now).hide(100);
+        $('#add_cal').show(100);
+        var find = todo_data.find($(this).data('id'));
+        set_cal(todo_data[find.list]['list'][find.i]);
+    });
+    $('#btn_cal_back').click(function(){
+        $(todo_data.now).show(100);
+        $('#add_cal').hide(100);
+    });
+    $('#btn_cal_save').click(function(){
+        var cal = get_cal_update();
+        todo_data.update(cal);
+        $(todo_data.now).show(100);
+        $('#add_cal').hide(100);
+    });
+    $('#btn_cal_delete').click(function(){
+        todo_data.delete(forms_cal['_id']);
+        $('#add_cal').hide(100);
+        $(todo_data.now).show(100);
+    });
+    $("#new-todo").keydown(function(event){
+        if ( event.which == 13 ) {
+            todo_data.insert();
+        }
+    });
+
  </script>
 {% endblock %}

@@ -5,7 +5,6 @@
 
 <!-- Css -->
 {% block css %}
-<link href="/static/css/timePicker.css" rel="stylesheet" type="text/css">
 <style>
 </style>
 {% endblock %}
@@ -140,11 +139,11 @@
                     <tbody>
                     {% for contract in contracts%}
                     <tr>
-                        <td>{{contract.length}}</td>
-                        <td>{{contact["date"]}}</td>
-                        <td>{{contact["contract_project"]}}</td>
-                        <td>{{contact["contract_start"]}}至{{contact["contract_end"]}}</td>
-                        <td>{{contact["amount"]}}</td>
+                        <td>{{loop.index}}</td>
+                        <td>{{contract["contract_date"]|date}}</td>
+                        <td>{{contract["contract_project"]}}</td>
+                        <td>{{contract["contract_start"]|date}} 至 {{contract["contract_end"]|date}}</td>
+                        <td>{{contract["amount"]}}</td>
                     </tr>
                     {% endfor %}
                     </tbody>
@@ -168,8 +167,8 @@
                         <tbody>
                         {% for contact in contacts%}
                             <tr>
-                                <td>{{contact.length}}</td>
-                                <td>{{contact["start_date"]}} {{contact["start_time"]}}</td>
+                                <td>{{loop.index}}</td>
+                                <td>{{contact["start"]|datetime}}</td>
                                 <td>{{contact["type"]}}</td>
                                 <td>{{contact["remark"]}}</td>
                             </tr>
@@ -231,7 +230,7 @@
     });
 
     $('#btn_add_cal').click(function(){
-        var cal = get_cal();
+        var cal = get_cal_new();
         var request = $.ajax({
             type: "POST",
             url: "/api/cal/save",
@@ -241,6 +240,19 @@
             }
         });
         $('#Modal_cal').modal('hide');
+        return false;
+    });
+    $('#btn_add_contract').click(function(){
+        var contract = get_contract();
+        var request = $.ajax({
+            type: "POST",
+            url: "/api/contract/save",
+            contentType:"application/json",
+            data: JSON.stringify(contract),
+            success: function(data) {
+            }
+        });
+        $('#Modal_contract').modal('hide');
         return false;
     });
  </script>

@@ -1,13 +1,53 @@
 #-*- coding:utf-8 -*-
 from flask import Flask, g, request, session, redirect, url_for, jsonify
 from flask import render_template as r_t
-import pymongo, hashlib, json, random
+import pymongo, hashlib, json, random,time,datetime
 from bson.objectid import ObjectId
 import dbs,uti
 
 
 app = Flask(__name__)
 app.secret_key = 'SDFsdf@#$sddf34nsSSWD3422^oiudf%sfwdsfsDSFAS'
+
+
+# Jinja Filters
+@app.template_filter('date')
+def filter_convert_datetime_to_string_date(t):
+    if type(t) == datetime.datetime:
+        return uti.time_datetime_to_string_date(t)
+    elif type(t) == str or type(t) ==unicode:
+        return t.split(' ')[0]
+
+@app.template_filter('time')
+def filter_convert_datetime_to_string_time(t):
+    if type(t) == datetime.datetime:
+        return uti.time_datetime_to_string_time(t)
+    elif type(t) == str or type(t) ==unicode:
+        return t.split(' ')[1]
+
+@app.template_filter('datetime')
+def filter_convert_datetime_to_string_time(t):
+    if type(t) == datetime.datetime:
+        return uti.time_datetime_to_string_datetime(t)
+    elif type(t) == str or type(t) ==unicode:
+        return t
+
+@app.template_filter('howlong')
+def filter_how_long(t):
+    if int(t) == 10000:
+        return u"无联络"
+    else:
+        return t
+
+
+
+
+
+
+
+
+
+
 
 # settings
 class settings():
@@ -50,34 +90,72 @@ def api_customer_add():
         customer = dbs.customer(request.json)
         customer.save()
         if customer["birthday"] != "0":
-            customer.insert_birthday(customer["birthday"]).save()
+            d = customer["birthday"].split('-')
+            customer.insert_birthday(datetime.datetime(int(d[0]),int(d[1]),int(d[2]))).save()
         return str(customer)
     return "ok"
 
 @app.route('/api/cal/save',methods=['POST'])
-def api_cal_add():
+def api_cal_save():
     if request.method == 'POST':
-        dbs.cal(request.json).save()
-        print request.json
+        c=dbs.cal(request.json).save()
+    return uti.myjsonify(c.get_python())
+@app.route('/api/cal/<id>/<action>',methods=['GET'])
+def api_cal_update(id,action):
+    c =dbs.cal(id)
+    if action =='get':
+        return uti.myjsonify(c.get_readable_python())
+    if action =='done':
+        c['finished']= True
+        c.save()
+    if action == 'not_done':
+        c['finished']= False
+        c.save()
+    if action == 'delete':
+        c.delete()
+    return 'ok'
+
+
+@app.route('/api/contract/save',methods=['POST'])
+def api_contract_save():
+    if request.method == 'POST':
+        dbs.contract(request.json).save()
     return "ok"
 
 @app.route("/api/cal",methods=['GET'])
 def api_cal():
-    start = request.args.get('start')
-    end = request.args.get('end')
+    start = dbs.get_datetime_from_stamp(request.args.get('start'))
+    end = dbs.get_datetime_from_stamp(request.args.get('end'))
     clist = dbs.cal.objects.find_by_period(start,end)
-    cclist = []
-    for c in clist:
-        cclist.append({'id':c["_id"],"title":c['title'],'start':c["start"],'end':c["end"]})
-    return uti.myjsonify(cclist)
+    clist = clist.get_readable_python()
+    return uti.myjsonify(clist)
+
+@app.route("/api/todo",methods=['GET'])
+def api_todo():
+    (not_done_today,today) = dbs.cal.objects.find_by_period_ascend(dbs.get_datetime_period()['today'][0],
+        dbs.get_datetime_period()['today'][1])
+    today = today.get_readable_python()
+
+    (not_done_tomorrow,tomorrow) = dbs.cal.objects.find_by_period_ascend(dbs.get_datetime_period()['tomorrow'][0],
+        dbs.get_datetime_period()['tomorrow'][1])
+    tomorrow = tomorrow.get_readable_python()
+
+    (not_done_inbox,inbox) = dbs.cal.objects.find_by_period_ascend(datetime.datetime(2000,1,1,5,4),
+        datetime.datetime(2000,1,1,5,4))
+    inbox = inbox.get_readable_python()
+
+    return uti.myjsonify({'inbox':{'not_done':not_done_inbox,'list':inbox},
+                          'today':{'not_done':not_done_today,'list':today},
+                          'tomorrow':{'not_done':not_done_tomorrow,'list':tomorrow}})
+
 @app.route("/api/memorial",methods=['GET'])
 def api_memorial():
-    start = request.args.get('start')
-    end = request.args.get('end')
+    start = dbs.get_datetime_from_stamp(request.args.get('start'))
+    end = dbs.get_datetime_from_stamp(request.args.get('end'))
     mlist = dbs.memorial.objects.find_by_period(start,end)
     mmlist = []
     for m in mlist:
-        mmlist.append({'id':m["_id"],"title":m['title'],'start':m["this_year_start"]})
+        mmlist.append({'_id':m["_id"],"title":m['title'],'start':m["this_year_start"]})
     return uti.myjsonify(mmlist)
 
 @app.route('/api/customer/list',methods=['POST'])
@@ -109,9 +187,15 @@ def api_customer_list():
 
         r = {"total":total,"now":str(now)+'-'+str(noww),"pages":pages,"page_now":page_now,
              "list":list.get_readable_python(["_id","name","type","gender","company","sector","vocation","amount","contact_record"]) }
-        print r
         return uti.myjsonify(r)
 
+    return "ok"
+@app.route('/api/customer/contact_list',methods=['GET'])
+def api_customer_contact_list():
+    if request.method == 'GET':
+        list = dbs.customer.objects.not_contact_list()
+        r = list.get_readable_python(["_id","name","type","gender","company","amount","contact_record","how_long"])
+        return uti.myjsonify({'list':r})
     return "ok"
 
 
@@ -150,7 +234,6 @@ def customer_add():
         customer_id_list = dbs.get_json_customer_and_id_list()
         return r_t('customer_add.html',customer_id_list = customer_id_list)
     else:
-        print request.data
         return "go"
 
 @app.route('/cal',methods=['GET'])

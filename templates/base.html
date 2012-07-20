@@ -7,6 +7,7 @@
         <link href="/static/css/flick/jquery-ui-1.8.20.css" rel="stylesheet" type="text/css">
         <link href="/static/css/token-input.css" rel="stylesheet" type="text/css">
         <link href="/static/css/token-input-facebook.css" rel="stylesheet" type="text/css">
+        <link href="/static/css/timePicker.css" rel="stylesheet" type="text/css">
         <script type="text/javascript" src="/static/js/jquery-1.7.2.js"></script>
 
 
@@ -15,7 +16,7 @@
             body {
                 padding-top: 60px;
             }
-            .container .nav {
+            .container .mynav {
                 float:right;
             }
         </style>
@@ -26,7 +27,7 @@
         <div class="navbar navbar-fixed-top">
             <div class="navbar-inner">
                 <div class="container">
-                    <ul class="nav">
+                    <ul class="nav mynav">
                         {% for i in range(g.settings.navbar|count) %}
                         <li {% if i == navbar_n %} class="active" {% endif %}> 
                             <a href="{{g.settings.navbar[i][0]}}">{{g.settings.navbar[i][1]}}</a> 
@@ -37,6 +38,10 @@
                                 <a class="btn btn-primary dropdown-toggle" data-toggle="dropdown" href="#"><i class="icon-user icon-white"></i> {{session['name']}} <span class="caret"></span></a>
                                 <ul class="dropdown-menu">
                                     <li><a href="#">Settings</a></li>
+                                    <li class="divider"></li>
+                                    <li><a href="#">新建活动</a></li>
+                                    <li><a href="/customer_add">添加客户</a></li>
+                                    <li><a href="#">签约</a></li>
                                     <li class="divider"></li>
                                     <li><a href="/logout">Logout</a></li>
                                 </ul>
