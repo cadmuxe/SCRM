@@ -12,6 +12,23 @@
 {% block content %}
 <div class="container">
     <div id='calendar'></div>
+
+    <div class="modal hide fade" id="Modal_cal">
+        <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal">×</button>
+            <h3>记录活动</h3>
+        </div>
+        <div class="modal-body">
+            {% import 'forms.html' as forms with context%}
+            {{forms.cal()}}
+
+        </div>
+        <div class="modal-footer">
+            <a href="#" class="btn" data-dismiss="modal">Close</a>
+            <a href="#" class="btn btn-danger" id="btn_add_delete">删除</a>
+            <a href="#" class="btn btn-primary" id="btn_add_cal">添加</a>
+        </div>
+    </div>
 </div>
 {% endblock %}
 
@@ -19,6 +36,34 @@
 {% block js %}
 <script type="text/javascript" src="/static/js/fullcalendar.min.js"></script>
 <script>
+    $('#Modal_cal').modal('hide');
+    $('#btn_add_cal').click(function(){
+        var cal = get_cal_update();
+        var request = $.ajax({
+            type: "POST",
+            url: "/api/cal/save",
+            contentType:"application/json",
+            data: JSON.stringify(cal),
+            success: function(data) {
+                $('#calendar').fullCalendar('refetchEvents');
+            }
+        });
+        $('#Modal_cal').modal('hide');
+        return false;
+    });
+    $('#btn_add_delete').click(function(){
+        var cal = get_cal_update();
+        url = '/api/cal/'+cal._id+'/delete';
+        var request = $.ajax({
+            type: "GET",
+            url: url,
+            success: function(data) {
+                $('#calendar').fullCalendar('refetchEvents');
+            }
+        });
+        $('#Modal_cal').modal('hide');
+        return false;
+    });
     $('#calendar').fullCalendar({
         header:{
             left:'prev,next today',
@@ -27,8 +72,65 @@
         },
         editable:true,
         height:550,
+        eventResize: function(event,dayDelta,minuteDelta,revertFunc) {
+            var change={};
+            change.day = dayDelta;
+            change.minute = minuteDelta;
+            var request = $.ajax({
+                type: "POST",
+                url: '/api/cal/'+event._id+'/resize',
+                contentType:"application/json",
+                data: JSON.stringify(change),
+                success: function(data) {
+                }
+            });
+
+        },
+        eventDrop: function(event,dayDelta,minuteDelta,allDay,revertFunc) {
+            var change={};
+            change.day = dayDelta;
+            change.minute = minuteDelta;
+            if (allDay) {
+                change.allDay =true;
+            }else{
+                change.allDay =false;
+            }
+            var request = $.ajax({
+                type: "POST",
+                url: '/api/cal/'+event._id+'/drop',
+                contentType:"application/json",
+                data: JSON.stringify(change),
+                success: function(data) {
+                }
+            });
+
+        },
+        eventClick: function(calEvent, jsEvent, view) {
+            var request = $.ajax({
+                type: "GET",
+                url: '/api/cal/'+calEvent._id+'/get',
+                dataType:'json',
+                success: function(data) {
+                    set_cal(data);
+                    $('#Modal_cal').modal('show');
+                }
+            });
+
+        },
+        dayClick: function(date, allDay, jsEvent, view) {
+            cal = new_cal();
+            cal.allDay = allDay;
+            d = date;
+            s = d.toISOString().split('T');
+            t = d.toLocaleTimeString().split(':');
+            ss = s[0]+' '+ t[0] + ':' + t[1];
+            cal.start=ss;
+            cal.end = ss;
+            set_cal(cal);
+            $('#Modal_cal').modal('show');
+        },
         eventSources: [
-            {url:"/api/cal",allDayDefault:false,editable:true, },
+            {url:"/api/cal",allDayDefault:false,editable:true },
             {url:"/api/memorial",allDayDefault:true,editable:false}]
 
     });

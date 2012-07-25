@@ -100,7 +100,8 @@ def api_cal_save():
     if request.method == 'POST':
         c=dbs.cal(request.json).save()
     return uti.myjsonify(c.get_python())
-@app.route('/api/cal/<id>/<action>',methods=['GET'])
+
+@app.route('/api/cal/<id>/<action>',methods=['GET','POST'])
 def api_cal_update(id,action):
     c =dbs.cal(id)
     if action =='get':
@@ -113,6 +114,19 @@ def api_cal_update(id,action):
         c.save()
     if action == 'delete':
         c.delete()
+    if action == 'drop' and request.method =='POST':
+        change = request.json
+        delta = datetime.timedelta(change["day"],change["minute"]*60)
+        c["start"] = c["start"] + delta
+        c["end"] = c["end"] +delta
+        c["allDay"] = change["allDay"]
+        c.save()
+    if action == 'resize' and request.method =='POST':
+        change = request.json
+        delta = datetime.timedelta(change["day"],change["minute"]*60)
+        c["end"] = c["end"] +delta
+        c.save()
+
     return 'ok'
 
 
@@ -232,7 +246,7 @@ def customer(uid):
 def customer_add():
     if request.method == 'GET':
         customer_id_list = dbs.get_json_customer_and_id_list()
-        return r_t('customer_add.html',customer_id_list = customer_id_list)
+        return r_t('customer_item.html',customer_id_list = customer_id_list,nav=u"增加客户")
     else:
         return "go"
 

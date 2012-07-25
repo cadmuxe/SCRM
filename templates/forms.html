@@ -195,20 +195,43 @@
     $(function() {
 
     });
+    var form_project ={};
 
-    function get_project(){
-        var project={};
-        project.issuer = $('#issuer').val();
+    function form_get_project(){
+        form_project.issuer = $('#issuer').val();
+        form_project.manager = "{{ session['_id'] }}";
+        form_project.project_name = $("#project_name").val();
+        form_project.working = true;
+        form_project.project_sector = $('#project_sector').val();
+        form_project.scale = $('#scale').val();
+        form_project.income_distribution = $('#income_distribution').val();
+        form_project.length_project = $('#length_project').val();
+        form_project.remark = $('#remark').val();
+        return form_project;
+    }
+    function new_project(){
+        var project={}
+        project.issuer = "";
         project.manager = "{{ session['_id'] }}";
-        project.project_name = $("#project_name").val();
+        project.project_name = "";
         project.working = true;
-        project.project_sector = $('#project_sector').val();
-        project.scale = $('#scale').val();
-        project.income_distribution = $('#income_distribution').val();
-        project.length_project = $('#length_project').val();
-        project.remark = $('#remark').val();
+        project.project_sector = "";
+        project.scale = "";
+        project.income_distribution ="";
+        project.length_project = "";
+        project.remark = "";
         return project;
     }
+    function set_project(project){
+        $('#issuer').val(project.issuer);
+        $("#project_name").val(project.project_name);
+        $('#project_sector').val(project.project_sector);
+        $('#scale').val(project.scale);
+        $('#income_distribution').val(project.income_distribution);
+        $('#length_project').val(project.length_project);
+        $('#remark').val(project.remark);
+    }
+
 </script>
 
 
