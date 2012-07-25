@@ -12,7 +12,8 @@ def object_hook(dct):
     if "attend" in dct:
         l=[]
         for i in dct["attend"]:
-            l.append({'id':ObjectId(i['id'])})
+            i["_id"] = ObjectId(i["_id"])
+            l.append(i)
         dct["attend"] = l
     if "start" in dct:
         if type(dct["start"]) != datetime.datetime and dct["start"]:

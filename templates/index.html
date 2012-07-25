@@ -147,7 +147,7 @@
         <td><%= this.list[i].company %> </td>
         <td><a class='btn_name' href='/customer/<%= this.list[i]._id %>'><%= this.list[i].name %>(<%=this.list[i].gender%>)</a> </td>
         <td><%= this.list[i].how_long %> </a></td>
-        <td><%=this.list[i].contact_record%></td>
+        <td><%=this.list[i].contact_record.date%></td>
         <td><%=this.list[i].amount%></td>
     </tr>
     <% }  %>

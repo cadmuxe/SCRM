@@ -63,7 +63,7 @@
                     theme: "facebook",
                     searchDelay:100,
                     {% if customer%}
-                    prePopulate:[{id:'{{customer['_id']|safe}}',name:'{{customer['name']|safe}}'}],
+                    prePopulate:[{_id:'{{customer['_id']|safe}}',name:'{{customer['name']|safe}}'}],
                     {% endif%}
                 }
         );

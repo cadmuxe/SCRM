@@ -122,8 +122,7 @@
             cal.allDay = allDay;
             d = date;
             s = d.toISOString().split('T');
-            t = d.toLocaleTimeString().split(':');
-            ss = s[0]+' '+ t[0] + ':' + t[1];
+            ss = s[0]+' '+ '9:00';
             cal.start=ss;
             cal.end = ss;
             set_cal(cal);

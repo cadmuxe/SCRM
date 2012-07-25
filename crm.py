@@ -105,7 +105,7 @@ def api_cal_save():
 def api_cal_update(id,action):
     c =dbs.cal(id)
     if action =='get':
-        return uti.myjsonify(c.get_readable_python())
+        return uti.myjsonify(c.get_python())
     if action =='done':
         c['finished']= True
         c.save()
@@ -141,22 +141,22 @@ def api_cal():
     start = dbs.get_datetime_from_stamp(request.args.get('start'))
     end = dbs.get_datetime_from_stamp(request.args.get('end'))
     clist = dbs.cal.objects.find_by_period(start,end)
-    clist = clist.get_readable_python()
+    clist = clist.get_python()
     return uti.myjsonify(clist)
 
 @app.route("/api/todo",methods=['GET'])
 def api_todo():
     (not_done_today,today) = dbs.cal.objects.find_by_period_ascend(dbs.get_datetime_period()['today'][0],
         dbs.get_datetime_period()['today'][1])
-    today = today.get_readable_python()
+    today = today.get_python()
 
     (not_done_tomorrow,tomorrow) = dbs.cal.objects.find_by_period_ascend(dbs.get_datetime_period()['tomorrow'][0],
         dbs.get_datetime_period()['tomorrow'][1])
-    tomorrow = tomorrow.get_readable_python()
+    tomorrow = tomorrow.get_python()
 
     (not_done_inbox,inbox) = dbs.cal.objects.find_by_period_ascend(datetime.datetime(2000,1,1,5,4),
         datetime.datetime(2000,1,1,5,4))
-    inbox = inbox.get_readable_python()
+    inbox = inbox.get_python()
 
     return uti.myjsonify({'inbox':{'not_done':not_done_inbox,'list':inbox},
                           'today':{'not_done':not_done_today,'list':today},
@@ -200,7 +200,7 @@ def api_customer_list():
             noww = (page_now-1)*each_page + len(list)
 
         r = {"total":total,"now":str(now)+'-'+str(noww),"pages":pages,"page_now":page_now,
-             "list":list.get_readable_python(["_id","name","type","gender","company","sector","vocation","amount","contact_record"]) }
+             "list":list.get_python(["_id","name","type","gender","company","sector","vocation","amount","contact_record"]) }
         return uti.myjsonify(r)
 
     return "ok"
@@ -208,7 +208,7 @@ def api_customer_list():
 def api_customer_contact_list():
     if request.method == 'GET':
         list = dbs.customer.objects.not_contact_list()
-        r = list.get_readable_python(["_id","name","type","gender","company","amount","contact_record","how_long"])
+        r = list.get_python(["_id","name","type","gender","company","amount","contact_record","how_long"])
         return uti.myjsonify({'list':r})
     return "ok"
 
@@ -232,9 +232,9 @@ def customer_list():
 @app.route('/customer/<uid>')
 def customer(uid):
 
-    customer = dbs.customer(uid).get_readable_python()
-    contacts =dbs.cal.objects.find_by_attend(uid).get_readable_python()
-    contracts = dbs.contract.objects.find_by_customer_id(uid).get_readable_python()
+    customer = dbs.customer(uid).get_python()
+    contacts =dbs.cal.objects.find_by_attend(uid).get_python()
+    contracts = dbs.contract.objects.find_by_customer_id(uid).get_python()
 
 
     return r_t('customer.html',customer=customer,
