@@ -89,10 +89,21 @@ def api_customer_add():
     if request.method == 'POST':
         customer = dbs.customer(request.json)
         customer.save()
+
         if customer["birthday"] != "0":
             d = customer["birthday"].split('-')
-            customer.insert_birthday(datetime.datetime(int(d[0]),int(d[1]),int(d[2]))).save()
-        return str(customer)
+            t = datetime.datetime(int(d[0]),int(d[1]),int(d[2]))
+            birthday = {"type":"birthday",
+                        "user_id":customer["_id"],
+                        "title":customer["name"]+u"的生日",
+                        "allDay":"false",
+                        "start":t,
+                        "end":0,
+                        "editable":"false",
+                        "remark":""
+            }
+            customer["birthday"] = {"_id":memorial(birthday).save()["_id"],"date":uti.time_datetime_to_string_date(t)}
+            customer.save()
     return "ok"
 
 @app.route('/api/cal/save',methods=['POST'])

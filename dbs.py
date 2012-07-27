@@ -350,33 +350,6 @@ class customer(BaseDocument):
             self._doc["how_long"] = 10000
         return self
 
-    def insert_birthday(self,time):
-        """ Insert customer to dbs, customer is a dict object
-        replace the birthday with the memorial_id.
-        return customer_id
-        time: must be a datetime
-        """
-
-        if self._doc.has_key("_id") == False:
-            raise ValueError
-        birthday = {"type":"birthday",
-                    "user_id":self._doc["_id"],
-                    "title":self._doc["name"]+u"的生日",
-                    "allDay":"false",
-                    "start":time,
-                    "end":0,
-                    "editable":"false",
-                    "remark":""
-        }
-        self._doc["birthday"] = {"_id":memorial(birthday).save()["_id"],"date":uti.time_datetime_to_string_date(time)}
-        self.save()
-        return self
-
-    def insert_social(self,dict):
-        dict["customer_id"] = ObjectId(dict["customer_id"])
-        self._doc["social"].append(dict)
-        self.save()
-        return self
 
 class cal(BaseDocument):
     objects = calQuery()
