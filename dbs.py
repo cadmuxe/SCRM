@@ -33,9 +33,10 @@ def get_json_time_period():
     return {'today':(today, today + 86400),'tomorrow':(today + 86400, today + 172800)}
 def get_datetime_period():
     t = datetime.datetime.today()
+    delta = datetime.timedelta(1)
     t1 = datetime.datetime(t.year,t.month,t.day)
-    t2 = datetime.datetime(t.year,t.month,t.day+1)
-    t3 = datetime.datetime(t.year,t.month,t.day+2)
+    t2 = t1+delta
+    t3 = t2+delta
     return {'today':(t1, t2),'tomorrow':(t2, t3)}
 def get_datetime_from_stamp(s):
     s = int(s)

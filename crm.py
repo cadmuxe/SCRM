@@ -10,6 +10,7 @@ app = Flask(__name__)
 app.secret_key = 'SDFsdf@#$sddf34nsSSWD3422^oiudf%sfwdsfsDSFAS'
 
 
+
 # Jinja Filters
 @app.template_filter('date')
 def filter_convert_datetime_to_string_date(t):
@@ -110,7 +111,7 @@ def api_customer_add():
 def api_cal_save():
     if request.method == 'POST':
         c=dbs.cal(request.json).save()
-    return uti.myjsonify(c.get_python())
+    return uti.myjsonify(c["_id"])
 
 @app.route('/api/cal/<id>/<action>',methods=['GET','POST'])
 def api_cal_update(id,action):
@@ -144,8 +145,18 @@ def api_cal_update(id,action):
 @app.route('/api/contract/save',methods=['POST'])
 def api_contract_save():
     if request.method == 'POST':
-        dbs.contract(request.json).save()
-    return "ok"
+        i=dbs.contract(request.json).save()
+    return uti.myjsonify(i['_id'])
+@app.route('/api/customer/save',methods=['POST'])
+def api_customer_save():
+    if request.method == 'POST':
+        i=dbs.customer(request.json).save()
+    return uti.myjsonify(i['_id'])
+@app.route('/api/project/save',methods=['POST'])
+def api_project_save():
+    if request.method == 'POST':
+        i=dbs.project(request.json).save()
+    return uti.myjsonify(i['_id'])
 
 @app.route("/api/cal",methods=['GET'])
 def api_cal():
