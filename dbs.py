@@ -167,6 +167,8 @@ class BaseDocument(object):
         else:
             try:
                 self._doc = db[self._collection].find_one({"_id":ObjectId(d)})
+                if self._doc is None:
+                    self._doc = {"doc":"NONE"}
             except:
                 print "Error"
                 raise ValueError
@@ -360,8 +362,9 @@ class cal(BaseDocument):
 
     def calculate(self):
         l=[]
-        for i in self._doc['attend']:
-            i['name'] = db['customer'].find_one(i['_id'])['name']
+        if self._doc.has_key("attend"):
+            for i in self._doc['attend']:
+                i['name'] = db['customer'].find_one(i['_id'])['name']
 
 class memorial(BaseDocument):
     objects = memorialQuery()

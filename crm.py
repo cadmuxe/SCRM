@@ -111,11 +111,11 @@ def api_customer_add():
 def api_cal_save():
     if request.method == 'POST':
         c=dbs.cal(request.json).save()
-    return uti.myjsonify(c["_id"])
+    return uti.myjsonify(c.get_python())
 
-@app.route('/api/cal/<id>/<action>',methods=['GET','POST'])
-def api_cal_update(id,action):
-    c =dbs.cal(id)
+@app.route('/api/cal/<_id>/<action>',methods=['GET','POST'])
+def api_cal_update(_id,action):
+    c =dbs.cal(_id)
     if action =='get':
         return uti.myjsonify(c.get_python())
     if action =='done':
@@ -138,8 +138,7 @@ def api_cal_update(id,action):
         delta = datetime.timedelta(change["day"],change["minute"]*60)
         c["end"] = c["end"] +delta
         c.save()
-
-    return 'ok'
+    return uti.myjsonify({'doc':'success'})
 
 
 @app.route('/api/contract/save',methods=['POST'])
@@ -168,6 +167,7 @@ def api_cal():
 
 @app.route("/api/todo",methods=['GET'])
 def api_todo():
+
     (not_done_today,today) = dbs.cal.objects.find_by_period_ascend(dbs.get_datetime_period()['today'][0],
         dbs.get_datetime_period()['today'][1])
     today = today.get_python()
@@ -179,10 +179,8 @@ def api_todo():
     (not_done_inbox,inbox) = dbs.cal.objects.find_by_period_ascend(datetime.datetime(2000,1,1,5,4),
         datetime.datetime(2000,1,1,5,4))
     inbox = inbox.get_python()
-
-    return uti.myjsonify({'inbox':{'not_done':not_done_inbox,'list':inbox},
-                          'today':{'not_done':not_done_today,'list':today},
-                          'tomorrow':{'not_done':not_done_tomorrow,'list':tomorrow}})
+    all = today+tomorrow+inbox
+    return uti.myjsonify(all)
 
 @app.route("/api/memorial",methods=['GET'])
 def api_memorial():
@@ -231,7 +229,7 @@ def api_customer_contact_list():
     if request.method == 'GET':
         list = dbs.customer.objects.not_contact_list()
         r = list.get_python(["_id","name","type","gender","company","amount","contact_record","how_long"])
-        return uti.myjsonify({'list':r})
+        return uti.myjsonify(r)
     return "ok"
 
 

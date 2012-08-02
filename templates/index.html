@@ -29,70 +29,28 @@
     <div class="span2">
         <!--Sidebar content-->
         <div class="" style="padding: 8px 0; margin-right:20px;">
-            <ul class="nav nav-pills nav-stacked myul">
-                <li class="nav-header">
-                    Todo List
-                </li>
-                <li class="myli">
-                    <a href="#" id="btn_inbox"><i class="icon-list"></i>收集箱 <strong>0</strong></a>
-                </li>
-                <li class="active myli">
-                    <a href="#" id="btn_today"><i class="icon-edit"></i>今日待办 <strong>0</strong></a>
-                </li>
-                <li class="myli">
-                    <a href="#" id="btn_tomorrow"><i class="icon-edit"></i>明日待办</a>
-                </li>
-            </ul>
+                {% raw %}
+                <script type="text/x-handlebars" >
+                {{view IndexApp.Todo_navView}}
+                </script>
+                {% endraw %}
         </div>
 
 
     </div>
     <div class="span10">
         <div class="myblock myscrollable">
-            <div>
-                <input type="text" class="input-xxlarge new-todo" id="new-todo" placeholder="What need to be done?">
-            </div>
-            <div id="inbox" style="display: none">
-                <ul></ul>
-            </div>
-            <div id="today">
-                <ul></ul>
-            </div>
-            <div id="tomorrow" style="display: none">
-                <ul></ul>
-            </div>
-            <div id="add_cal" style="display: none">
-                <button class="btn btn-small" id="btn_cal_back"><i class="icon-arrow-left"></i>放弃</button>
-                <button class="btn btn-danger" id="btn_cal_save">保存</button>
-                <button class="btn" id="btn_cal_delete">删除</button>
-                <hr>
-                {% import 'forms.html' as forms with context%}
-                {{forms.cal( )}}
+            <div id="main_view">
+
             </div>
         </div>
         <h3>Contact List</h3>
-        <table class="table table-striped" id="contact_list">
-            <thead>
-            <tr>
-                <th>#</th>
-                <th>公司</th>
-                <th>姓名</th>
-                <th>未通信天数</th>
-                <th>上次通信时间</th>
-                <th>累计合约</th>
-            </tr>
-            </thead>
-            <tbody>
-            <tr>
-                <td></td>
-                <td></td>
-                <td></td>
-                <td></td>
-                <td></td>
-                <td></td>
-            </tr>
-            </tbody>
-        </table>
+        {% raw %}
+        <script type="text/x-handlebars">
+            {{view IndexApp.ContactView}}
+        </script>
+        {% endraw %}
+
 
     </div>
 
@@ -109,271 +67,364 @@
 
 
 {% block js %}
+<script type="text/javascript" src="/static/js/ember-0.9.8.1.js"></script>
+<script type="text/javascript" src="/static/js/models.js"></script>
 
-
-<script type="text/x-jqote-template" id="template-todo">
-    <![CDATA[
-    <ul class="unstyled todo-list">
-        <% if ( this.list.length > 0 ) { %>
-            <% for (l in this.list) { %>
-                <% if (this.list[l].finished == true ) { %>
-            <li data-id="<%= this.list[l]._id%>" class="completed" >
-                <input type="checkbox" class="toggle view" checked=true>
-                <% } else { %>
-            <li data-id="<%= this.list[l]._id%>" class="" >
-                <input type="checkbox" class="toggle view" >
-                <% } %>
-                <label class="text view"><%=this.list[l].start.split(' ')[1] %></label>
-                <input class="edit" value="<%= this.list[l].title %>">
-                <label class="text view" style="margin:0 0;"><%= this.list[l].title %></label>
-                <div class="destroy view"></div>
-            </li>
-            <% } %>
-        <% } else { %>
-            <li><label class="text">无下一步任务</label></li>
-        <% } %>
+{% raw %}
+<script type="text/x-handlebars" data-template-name="todo-nav">
+    <ul class="nav nav-pills nav-stacked myul">
+    <li class="nav-header">
+        Todo List
+    </li>
+    <li {{bindAttr class="IndexApp.mainController.isInbox:active"}}>
+        <a href="#" {{action "showInbox" target="IndexApp.stateManager"}} ><i class="icon-list"></i>收集箱 <strong>{{IndexApp.mainController.n_inbox}}</strong></a>
+    </li>
+    <li {{bindAttr class="IndexApp.mainController.isToday:active"}}>
+        <a href="#"  {{action "showToday" target="IndexApp.stateManager"}}><i class="icon-edit"></i>今日待办 <strong>{{IndexApp.mainController.n_today}}</strong></a>
+    </li>
+    <li {{bindAttr class="IndexApp.mainController.isTomorrow:active"}}>
+        <a href="#"{{action "showTomorrow" target="IndexApp.stateManager"}} ><i class="icon-edit"></i>明日待办</a>
+    </li>
     </ul>
-    ]]>
 </script>
 
-
-<script type="text/x-jqote-template" id="template-contact">
-    <![CDATA[
-    <tbody>
-    <% if ( this.list.length > 0 ) { %>
-    <% for (i in this.list) { %>
-    <tr>
-        <td><%= i %></td>
-        <td><%= this.list[i].company %> </td>
-        <td><a class='btn_name' href='/customer/<%= this.list[i]._id %>'><%= this.list[i].name %>(<%=this.list[i].gender%>)</a> </td>
-        <td><%= this.list[i].how_long %> </a></td>
-        <td><%=this.list[i].contact_record.date%></td>
-        <td><%=this.list[i].amount%></td>
-    </tr>
-    <% }  %>
-    <% } %>
-    </tbody>
-    ]]>
+<script type="text/x-handlebars" data-template-name="contact">
+    <table class="table table-striped" id="contact_list">
+        <thead>
+        <tr>
+            <th>#</th>
+            <th>公司</th>
+            <th>姓名</th>
+            <th>未通信天数</th>
+            <th>上次通信时间</th>
+            <th>累计合约</th>
+        </tr>
+        </thead>
+        <tbody>
+        {{#each IndexApp.contactController}}
+        {{#view contentBinding="this"}}
+        <tr>
+            <td> {{_parentView.contentIndex}}</td>
+            <td>{{ content.company }}</td>
+            <td><a {{bindAttr href="content.customer_url"}}>{{ content.name }}({{content.gender}})</a> </td>
+            <td>{{content.how_long}} </a></td>
+            <td>{{content.contact_record.date}}</td>
+            <td>{{content.amount}}</td>
+        </tr>
+        {{/view}}
+        {{/each}}
+        </tbody>
+    </table>
 </script>
 
+<script type="text/x-handlebars" data-template-name="todo-content">
+    <div>
+        {{view IndexApp.InsertCalTextField placeholder="What need to be done?" valueBinding="IndexApp.mainController.newCalTitle" class="input-xxlarge"}}
+    </div>
+    <ul class="todo-list unstyled">
+        {{#each  content}}
+        {{#view contentBinding="this"}}
+            <li >
+                {{view Ember.Checkbox valueBinding="content.finished" classNames="toggle view"}}
+                <div {{action "showCal" on="doubleClick" target="IndexApp.stateManager" context="content"}}>
+                    <label class="text view">{{content.start}}</label>
+                    <label class="text view" style="margin:0 0;">{{content.title }}</label>
+                    <div class="destroy view"></div>
+                </div>
+            </li>
+        {{/view}}
+        {{/each}}
+    </ul>
+</script>
 
+<script type="text/x-handlebars" data-template-name="todo-item">
+    <div>
+        <button class="btn btn-small" {{action "backTodo" target="IndexApp.mainController" context="content"}}><i class="icon-arrow-left"></i>放弃</button>
+        <button class="btn btn-danger" {{action "saveCal" target="IndexApp.mainController" context="content"}}>保存</button>
+        <button class="btn" {{action "delCal" target="IndexApp.mainController" context="content"}}>删除</button>
+        <hr>
+    </div>
+    <p>
+        {{view Ember.TextField valueBinding="content.title" class="input-large" placeholder="无标题活动"}}
+        <label class="checkbox inline">
+            {{view Ember.Checkbox valueBinding="content.allDay"}}全天
+        </label>
+    </p>
+    <p>
+        {{view Ember.TextField valueBinding="content.start_date" class="input-small datepicker" id="start_date" }}
+        {{view Ember.TextField valueBinding="content.start_time" class="input-mini" id="contact_start_time" }}至
+        {{view Ember.TextField valueBinding="content.end_date" class="input-small datepicker" id="end_date"}}
+        {{view Ember.TextField valueBinding="content.end_time" class="input-mini" id="contact_end_time" }}
+    </p>
+    <hr>
+    <h4>活动详情</h4>
+    <p>地点
+        {{view Ember.TextField valueBinding="content.location"  class="input-large"  }}</p>
+    <p>
+        类型{{view Ember.Select contentBinding="IndexApp.systemValue.contact_type" selectionBinding="content.contact_type" class="input-small"}}
+        花费{{view Ember.TextField valueBinding="content.spending"  class="input-mini"  }}
+    </p>
+
+    <p>参与人<input class="input-large" type="text" id="contact_attend"></p>
+    <hr>
+    <p>说明</br></textarea>
+        {{view Ember.TextArea valueBinding="content.remark"  class="input-xlarge"  }}</p>
+</script>
+
+{% endraw %}
 
 <script>
-    var todo_data={};
-    todo_data.now="#today";
-
-    todo_data.fetch=function(){
-        var request = $.ajax({
-            type: "GET",
-            url: '/api/todo',
-            dataType:'json',
-            success: function(data) {
-                todo_data.inbox = data.inbox
-                todo_data.today = data.today
-                todo_data.tomorrow = data.tomorrow
-                todo_data.refresh();
-            }
-        });
-    }
-    todo_data.update_num=function(){
-        $('#btn_inbox strong').html(todo_data.inbox.not_done);
-        $('#btn_today strong').html(todo_data.today.not_done);
-    }
-    todo_data.update_num_add=function (){
-        if (todo_data.now == "#today"){
-            todo_data.today.not_done +=1;
+(function (){
+    IndexApp = Ember.Application.create();
+    IndexApp.name="go";
+    IndexApp.Todo_navView = Ember.View.extend({
+        templateName: 'todo-nav'
+    });
+    IndexApp.ContactView = Ember.View.extend({
+       templateName:'contact'
+    });
+    IndexApp.InsertCalTextField = Em.TextField.extend({
+       insertNewline:function(){
+           IndexApp.mainController.insertCal();
+       }
+    });
+    IndexApp.CalArrayController = Em.ArrayController.extend({
+        dateFilter:function(d){
+            var ret=[];
+            this.content.forEach(function(item,index,enumerable){
+                if (item.get('start_date') == d) ret.push(item);
+            })
+            return ret;
         }
-        if (todo_data.now == "#inbox"){
-            todo_data.inbox.not_done +=1;
-        }
-        todo_data.update_num();
-    }
-    todo_data.update_num_sub = function (){
-        if (todo_data.now == "#today"){
-            todo_data.today.not_done -=1;
-        }
-        if (todo_data.now == "#inbox"){
-            todo_data.inbox.not_done -=1;
-        }
-        todo_data.update_num();
-    }
-    todo_data.refresh=function(){
-        $('#today ul').replaceWith($('#template-todo').jqote(todo_data.today));
-        $('#tomorrow ul').replaceWith($('#template-todo').jqote(todo_data.tomorrow));
-        $('#inbox ul').replaceWith($('#template-todo').jqote(todo_data.inbox));
-        todo_data.update_num();
-    }
-    todo_data.insert=function(){
-        var cal=new_cal();
-        cal.title = $('#new-todo').val();
-        if(cal.title == ''){
-            return 'no'
-        }
-        if (todo_data.now == '#inbox'){
-            cal.start = "2000-1-1 05:04";
-            cal.end = cal.start;
-        }
-        else if (todo_data.now == '#today')
-        {
-            d = new Date();
-            s = d.toISOString().split('T');
-            t = d.toLocaleTimeString().split(':');
-            ss = s[0]+' '+ t[0] + ':' + t[1];
-            cal.start = ss;
-            cal.end = cal.start;
-        }
-        else if (todo_data.now == '#tomorrow')
-        {
-            d = new Date();
+    });
+    IndexApp.systemValue=Em.Object.create({
+        customer_list:{{g.dbs.get_json_customer_and_id_list()|safe}},
+        contact_type:{{g.dbs.tags("contact_type").get_json()|safe}}
+    });
+    IndexApp.contactController = Em.ArrayController.create({
+        content:[]
+    });
+    IndexApp.mainController = IndexApp.CalArrayController.create({
+        content:[],
+        isInbox:false,
+        isToday:true,
+        isTomorrow:false,
+        newCalTitle:"",
+        current:'today',
+        calItem:Cal.create({}),
+        inbox:function(){
+            return this.dateFilter("2000-01-01")
+        }.property('content.@each.start'),
+        today:function(){
+            var d = new Date();
+            var s = d.toISOString().split('T');
+            return this.dateFilter(s[0])
+        }.property('content.@each.start'),
+        tomorrow:function(){
+            var d = new Date();
             d.setDate(d.getDate()+1);
-            s = d.toISOString().split('T');
-            t = d.toLocaleTimeString().split(':');
-            ss = s[0]+' '+ t[0] + ':' + t[1];
-            cal.start = ss;
-            cal.end = cal.start;
-        }
-        var request = $.ajax({
-            type: "POST",
-            url: "/api/cal/save",
-            contentType:"application/json",
-            data: JSON.stringify(cal),
-            dataType:'json',
-            success: function(data) {
-                todo_data[todo_data.now.split('#')[1]].list.push(data);
-                todo_data.refresh();
-            }
-        });
-        $('#new-todo').val('');
-        return 'ok';
-    }
-    todo_data.find=function(id){
-        for(i in todo_data.inbox.list){
-            if(todo_data.inbox.list[i]['_id'] ==id){
-                return {list:'inbox',i:i}
-            }
-        }
-        for(i in todo_data.today.list){
-            if(todo_data.today.list[i]['_id'] ==id){
-                return {list:'today',i:i}
-            }
-        }
-        for(i in todo_data.tomorrow.list){
-            if(todo_data.tomorrow.list[i]['_id'] ==id){
-                return {list:'tomorrow',i:i}
-            }
-        }
-        return 'none'
-    }
-    todo_data.done= function(id){
-        var find=todo_data.find(id);
-        todo_data[find.list].list[i]['finished'] = true;
-        url = '/api/cal/'+id+'/done';
-        $.get(url);
-        todo_data.update_num_sub();
-    }
-    todo_data.not_done= function(id){
-        var find=todo_data.find(id);
-        todo_data[find.list].list[i]['finished'] = false;
-        url = '/api/cal/'+id+'/not_done';
-        $.get(url);
-        todo_data.update_num_add();
-    }
-    todo_data.update=function(cal){
-        var request = $.ajax({
-            type: "POST",
-            url: "/api/cal/save",
-            contentType:"application/json",
-            data: JSON.stringify(cal),
-            success: function(data) {
-                todo_data.fetch();
-            }
-        });
-        return 'ok';
+            var s = d.toISOString().split('T');
+            return this.dateFilter(s[0])
+        }.property('content.@each.start'),
+        n_inbox: function() {
+            var todos = this.get('inbox');
+            return todos.filterProperty('finished', false).get('length');
+        }.property('inbox.@each.finished'),
+        n_today: function() {
+            var todos = this.get('today');
+            return todos.filterProperty('finished', false).get('length');
+        }.property('today.@each.finished'),
+        init:function(){
+            var request = $.ajax({
+                type: "GET",
+                url: '/api/todo',
+                dataType:'json',
+                success: function(data) {
+                    $(data).each(function(index,cal){
+                        var c = Cal.create(cal);
+                        IndexApp.mainController.pushObject(c);
+                    });
+                }
+            });
+            request = $.ajax({
+                type: "GET",
+                url: '/api/customer/contact_list',
+                dataType:'json',
+                success: function(data) {
+                    $(data).each(function(index,c){
+                        var c = Customer.create(c);
+                        IndexApp.contactController.pushObject(c);
+                    });
+                }
+            });
+        },
+        insertCal:function(){
+            var c = Cal.create({
+               type:"事务",
+               title:this.newCalTitle,
+                allDay:false,
+                finished:false
+            });
+            switch(IndexApp.stateManager.currentState.name){
+                case "inbox":
+                    c.set('start', "2000-01-01 05:04");
+                    c.set('end',"2000-01-01 05:04");
+                    break;
+                case "today":
+                    var d = new Date();
+                    var s = d.toISOString().split('T');
+                    var t = d.toLocaleTimeString().split(':');
+                    var ss = s[0]+' '+ t[0] + ':' + t[1];
+                    c.set('start', ss);
+                    c.set('end',ss);
+                    break;
+                case "tomorrow":
+                    var d = new Date();
+                    d.setDate(d.getDate()+1);
+                    var s = d.toISOString().split('T');
+                    var t = d.toLocaleTimeString().split(':');
+                    ss = s[0]+' '+ t[0] + ':' + t[1];
+                    c.set('start', ss);
+                    c.set('end',ss);
+                    break;
 
-    }
-    todo_data.delete=function(id){
-        url = '/api/cal/'+id+'/delete';
-        $.get(url);
-        todo_data.fetch();
-    }
-    $(function(){
-        $('#inbox,#tomorrow,#add_cal').hide();
-        $('#today').show();
-        todo_data.fetch();
-        var request = $.ajax({
-            type: "GET",
-            url: "/api/customer/contact_list",
-            dataType:'json',
-            success: function(data) {
-                $('#contact_list tbody').replaceWith($('#template-contact').jqote(data));
             }
-        });
-    });
+            var request = $.ajax({
+                type: "POST",
+                url: "/api/cal/save",
+                contentType:"application/json",
+                data: JSON.stringify(c.get_content()),
+                dataType:'json',
+                success: function(data) {
+                    var c = Cal.create(data);
+                    IndexApp.mainController.pushObject(c)
+                    console.debug(c)
+                }
+            });
+            this.set('newCalTitle','');
+        },
+        delCal:function(event){
+            IndexApp.stateManager.goToState(IndexApp.mainController.get('current'));
+            var cal = event.context;
+            var request = $.ajax({
+                type:'GET',
+                url:'/api/cal/'+cal.get('_id')+'/delete',
+                dataType:'json',
+                success:function(data){
+                    IndexApp.mainController.content.removeObject(cal);
+                }
+            });
+        },
+        saveCal:function(event){
+            IndexApp.stateManager.goToState(IndexApp.mainController.get('current'));
+            var request = $.ajax({
+                type:'POST',
+                url:'/api/cal/save',
+                contentType:"application/json",
+                data:JSON.stringify(IndexApp.mainController.get('calItem').get_content()),
+                dataType:'json',
+                success:function(data){
+                }
+            })
 
-    $('#btn_inbox').click(function(){
-        $('#today,#tomorrow,#add_cal').hide(100);
-        $('#inbox').show('fast');
-        $('.myli').removeClass('active');
-        $(this).parent().addClass('active');
-        todo_data.now="#inbox";
-        return false;
-    });
-    $('#btn_today').click(function(){
-        $('#inbox,#tomorrow,#add_cal').hide(100);
-        $('#today').show('fast');
-        $('.myli').removeClass('active');
-        $(this).parent().addClass('active');
-        todo_data.now="#today";
-        return false;
-    });
-    $('#btn_tomorrow').click(function(){
-        $('#today,#inbox,#add_cal').hide(100);
-        $('#tomorrow').show(100);
-        $('.myli').removeClass('active');
-        $(this).parent().addClass('active');
-        todo_data.now="#tomorrow";
-        return false;
-    });
-    $('.todo-list .toggle').live('click',function(){
-        var thisCheck = $(this);
-        if (thisCheck.is (':checked'))
-        {
-            $(this).parent().addClass('completed');
-            var id = $(this).parent().data('id');
-            todo_data.done(id);
-        }
-        else{
-            $(this).parent().removeClass('completed');
-            var id = $(this).parent().data('id');
-            todo_data.not_done(id);
+        },
+        backTodo:function(event){
+            IndexApp.stateManager.goToState(IndexApp.mainController.get('current'));
         }
     });
-    $('.todo-list li').live('dblclick',function(){
-        $(todo_data.now).hide(100);
-        $('#add_cal').show(100);
-        var find = todo_data.find($(this).data('id'));
-        set_cal(todo_data[find.list]['list'][find.i]);
-    });
-    $('#btn_cal_back').click(function(){
-        $(todo_data.now).show(100);
-        $('#add_cal').hide(100);
-    });
-    $('#btn_cal_save').click(function(){
-        var cal = get_cal_update();
-        todo_data.update(cal);
-        $(todo_data.now).show(100);
-        $('#add_cal').hide(100);
-    });
-    $('#btn_cal_delete').click(function(){
-        todo_data.delete(forms_cal['_id']);
-        $('#add_cal').hide(100);
-        $(todo_data.now).show(100);
-    });
-    $("#new-todo").keydown(function(event){
-        if ( event.which == 13 ) {
-            todo_data.insert();
-        }
-    });
+    IndexApp.stateManager = Ember.StateManager.create({
+        rootElement: '#main_view',
+        initialState: 'today',
+
+        showInbox: function(manager) {
+            manager.goToState('inbox');
+            IndexApp.mainController.set('isInbox',true);
+            IndexApp.mainController.set('isToday',false);
+            IndexApp.mainController.set('isTomorrow',false);
+            IndexApp.mainController.set('current',manager.currentState.name);
+        },
+        showToday: function(manager) {
+            manager.goToState('today');
+            IndexApp.mainController.set('isInbox',false);
+            IndexApp.mainController.set('isToday',true);
+            IndexApp.mainController.set('isTomorrow',false);
+            IndexApp.mainController.set('current',manager.currentState.name);
+        },
+        showTomorrow: function(manager){
+            manager.goToState('tomorrow');
+            IndexApp.mainController.set('isInbox',false);
+            IndexApp.mainController.set('isToday',false);
+            IndexApp.mainController.set('isTomorrow',true);
+            IndexApp.mainController.set('current',manager.currentState.name);
+
+        },
+        showCal:function(manager,event){
+            IndexApp.mainController.set('calItem', event.context);
+            manager.goToState('cal');
+        },
+        inbox: Ember.ViewState.create({
+            view: Ember.View.extend({
+                templateName: 'todo-content',
+                contentBinding: 'IndexApp.mainController.inbox'
+
+            })
+        }),
+        today: Ember.ViewState.create({
+            view: Ember.View.extend({
+                templateName: 'todo-content',
+                contentBinding: 'IndexApp.mainController.today'
+            })
+        }),
+        tomorrow: Ember.ViewState.create({
+            view: Ember.View.extend({
+                templateName: 'todo-content',
+                contentBinding: 'IndexApp.mainController.tomorrow'
+
+            })
+        }),
+        cal: Ember.ViewState.create({
+            view: Ember.View.extend({
+                templateName: 'todo-item',
+                contentBinding: 'IndexApp.mainController.calItem',
+                didInsertElement: function() {
+                    this._super();
+                    this.$( ".datepicker" ).datepicker({ dateFormat: "yy-mm-dd",showButtonPanel: true});
+                    this.$("#contact_start_time, #contact_end_time").timePicker({
+                                show24Hours: true,
+                                separator: ':',
+                                step: 30}
+                    );
+                    var oldTime = $.timePicker("#contact_start_time").getTime();
+
+                    $('#start_date').change(function(){
+                        $('#end_date').val($('#start_date').val());
+                    });
+                    $("#contact_start_time").change(function() {
+                        if ($("#contact_end_time").val()) {
+                            var duration = ($.timePicker("#contact_end_time").getTime() - oldTime);
+                            var time = $.timePicker("#contact_start_time").getTime();
+                            $.timePicker("#contact_end_time").setTime(new Date(new Date(time.getTime() + duration)));
+                            oldTime = time;
+                        }
+                    });
+
+
+                    $( "#contact_attend" ).tokenInput(IndexApp.systemValue.get('customer_list'),
+                        {
+                            theme: "facebook",
+                            searchDelay:100,
+                            prePopulate:IndexApp.mainController.calItem.get('attend')
+                        });
+                }
+
+            })
+        })
+    })
+
+
+
+
+})();
 
  </script>
 {% endblock %}
