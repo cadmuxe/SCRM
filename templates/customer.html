@@ -74,7 +74,8 @@
                             </td>
                         </tr>
                         <tr>
-                            <td><strong>家庭住址</strong></td><td colspan="3">{{customer['home_addr']}}</td>
+                            <td><strong>家庭住址</strong></td><td>{{customer['home_addr']}}</td>
+                            <td><strong>客户来源</strong></td><td>{{customer['channel']['method']}}-{{customer['channel']['name']}}</td>
                         </tr>
                         <tr>
                         </tr>
@@ -84,13 +85,18 @@
                 <div class="span2">
                     <div>
                         <p>
-                            <a class="btn btn-success" data-toggle="modal" href="#Modal_cal">
+                            <a class="btn btn-success"  href="#" id="btn_contact">
                                 <i class="icon-calendar icon-white"></i> 记录活动
                             </a>
                         </p>
                         <p>
-                            <a class="btn btn-primary" data-toggle="modal" href="#Modal_contract">
+                            <a class="btn btn-primary" href="#" id="btn_contract">
                                 <i class="icon-file icon-white"></i> 记录合同
+                            </a>
+                        </p>
+                        <p>
+                            <a class="btn btn-info"  href="/customer/edit/{{customer['_id']}}">
+                                <i class="icon-pencil icon-white"></i> 编辑资料
                             </a>
                         </p>
                     </div>
@@ -102,11 +108,24 @@
                 <div id="relevance_info" class="span5">
                     <div class="page-header">
                         <h4>重要关系</h4>
+                        <br/>
+                        <ul class="unstyled">
+                            {% for item in customer['relevance_people']%}
+                            <li>{{item['name']}}-{{item['relation']}}-{{item['phone']}}-{{item['email']}}-{{item['remark']}}</li>
+                            {% endfor %}
+                        </ul>
+
                     </div>
                 </div>
                 <div id="social_info" class="span5">
                     <div class="page-header">
                         <h4>社会关系</h4>
+                        <br/>
+                        <ul class="unstyled">
+                            {% for item in customer['social']%}
+                            <li>{{item['name']}}-{{item['relation']}}-{{item['remark']}}</li>
+                            {% endfor %}
+                        </ul>
                     </div>
                 </div>
             </div>
@@ -144,6 +163,7 @@
                         <td>{{contract["contract_project"]}}</td>
                         <td>{{contract["contract_start"]|date}} 至 {{contract["contract_end"]|date}}</td>
                         <td>{{contract["amount"]}}</td>
+                        <td><a href="#" class="edit_contract" data-id="{{contract['_id']}}">Edit</a></td>
                     </tr>
                     {% endfor %}
                     </tbody>
@@ -161,7 +181,8 @@
                             <th>#</th>
                             <th>时间</th>
                             <th>类型</th>
-                            <th>内容</th>
+                            <th>标题</th>
+                            <th>备注</th>
                         </tr>
                         </thead>
                         <tbody>
@@ -170,7 +191,10 @@
                                 <td>{{loop.index}}</td>
                                 <td>{{contact["start"]|datetime}}</td>
                                 <td>{{contact["type"]}}</td>
+                                <td>{{contact["title"]}}</td>
                                 <td>{{contact["remark"]}}</td>
+                                <td><a href="#" class="edit_contact" data-id="{{contact['_id']}}">Edit</a></td>
+
                             </tr>
                         {% endfor %}
                         </tbody>
@@ -194,7 +218,7 @@
     </div>
     <div class="modal-footer">
         <a href="#" class="btn" data-dismiss="modal">Close</a>
-        <a href="#" class="btn btn-primary" id="btn_add_cal">添加</a>
+        <a href="#" class="btn btn-primary" id="btn_add_cal">保存</a>
     </div>
 </div>
 
@@ -211,7 +235,7 @@
     </div>
     <div class="modal-footer">
         <a href="#" class="btn" data-dismiss="modal">Close</a>
-        <a href="#" class="btn btn-primary" id="btn_add_contract">添加</a>
+        <a href="#" class="btn btn-primary" id="btn_add_contract">保存</a>
     </div>
 </div>
 
@@ -224,13 +248,23 @@
 
 
 {% block js %}
+
 <script>
     $(function() {
         $('#Modal_cal').modal('hide');
     });
-
+    $("#btn_contact").click(function(){
+        clear_cal();
+        $("#Modal_cal").modal("show");
+        return false;
+    });
+    $("#btn_contract").click(function(){
+        clear_contract();
+        $("#Modal_contract").modal("show");
+        return false;
+    });
     $('#btn_add_cal').click(function(){
-        var cal = get_cal_new();
+        var cal = get_cal();
         var request = $.ajax({
             type: "POST",
             url: "/api/cal/save",
@@ -240,6 +274,32 @@
             }
         });
         $('#Modal_cal').modal('hide');
+        return false;
+    });
+    $(".edit_contract").click(function(evn){
+        var request = $.ajax({
+            type: "GET",
+            url: "/api/contract/"+$(evn.currentTarget).data('id'),
+            dataType:'json',
+            success: function(data) {
+                set_contract(data);
+            }
+        });
+
+        $('#Modal_contract').modal('show');
+        return false;
+    });
+    $(".edit_contact").click(function(evn){
+        var request = $.ajax({
+            type: "GET",
+            url: "/api/cal/"+$(evn.currentTarget).data('id'),
+            dataType:'json',
+            success: function(data) {
+                set_cal(data);
+            }
+        });
+
+        $('#Modal_cal').modal('show');
         return false;
     });
     $('#btn_add_contract').click(function(){

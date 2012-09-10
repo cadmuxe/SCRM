@@ -21,6 +21,14 @@ Customer = Ember.Object.extend({
                 }
             });
             return 'ok';
+        },
+        get_content:function(){
+            var rtn = ['type','manager','name','gender','birthday','memorial_days',
+                'tags','sector','vocation','phone','email','company','home_addr',
+            'contracts','likes','wishlist','remark','welfare','activities',
+                'relevance_people','social','channel'];
+            if (this.get('_id') != undefined){rtn.push('_id');}
+            return this.getProperties(rtn);
         }
 
     });

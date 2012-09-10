@@ -79,6 +79,26 @@ class tags:
             raise ValueError
     def get_tags(self):
         return self.__o["value"]
+
+    def get_tags_string(self):
+        '''
+        return tags string,  "tag1 tag2 tag3..."
+        '''
+        s=''
+        for item in self.__o['value']:
+            s+=(' '+item)
+        return s
+    def set_tags_string(self,s):
+        '''
+        set tags by sting  s:  "tag1 tag2"
+        '''
+        l=s.strip().split(' ')
+        self.__o['value'] =[]
+        for i in l:
+            if i == '':
+                continue
+            self.__o['value'].append(i.strip())
+        return self.__save()
     def get_count_of_one_tag(self,tag_name):
         return db[self.__search['collection']].find({self.__search['field']:tag_name}).count()
     def get_count_of_tags(self):
@@ -89,7 +109,10 @@ class tags:
     def __save(self):
         return db["settings"].save(self.__o)
     def add_tag(self,tag):
-        self.__o["value"].append(tag)
+        try:
+            self.__o["value"].index(tag)
+        except ValueError:
+            self.__o["value"].append(tag)
         return self.__save()
     def remove_tag(self,tag_name,sure):
         if sure == "i am sure":
@@ -172,6 +195,7 @@ class BaseDocument(object):
             except:
                 print "Error"
                 raise ValueError
+        self.calculate()
         self.__python_helper={}
 
     def save(self):
@@ -340,7 +364,6 @@ class customer(BaseDocument):
         self._doc["amount"] = self.__get_customer_total_contract_amount()
         try:
             contact_record = db['cal'].find({"attend._id":self._doc['_id'],"type":u"事务"}).sort("start", pymongo.DESCENDING)[0]
-            print contact_record["_id"]
             self._doc["contact_record"] = {"_id":contact_record["_id"],
                                            "date":uti.time_datetime_to_string_date(contact_record["start"])}
         except:
@@ -351,6 +374,7 @@ class customer(BaseDocument):
         else:
             self._doc["contact_record"] = {'_id':None,'date':u"无联络信息"}
             self._doc["how_long"] = 10000
+
         return self
 
 
@@ -361,10 +385,11 @@ class cal(BaseDocument):
         super(cal,self).__init__(c)
 
     def calculate(self):
-        l=[]
-        if self._doc.has_key("attend"):
-            for i in self._doc['attend']:
-                i['name'] = db['customer'].find_one(i['_id'])['name']
+        pass
+        #l=[]
+        #if self._doc.has_key("attend"):
+        #    for i in self._doc['attend']:
+        #        i['name'] = db['customer'].find_one(i['_id'])['name']
 
 class memorial(BaseDocument):
     objects = memorialQuery()

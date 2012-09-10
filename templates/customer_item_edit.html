@@ -28,7 +28,10 @@
                     <a href="/customer"><i class="icon-list"></i>列表</a>
                 </li>
                 <li class="active">
-                    <a href="/customer_add"><i class="icon-edit"></i>{{nav}}</a>
+                    <a href="#"><ul><li>{{customer["name"]}}</li></ul></a>
+                </li>
+                <li class="">
+                    <a href="/customer_add"><i class="icon-edit"></i>增加客户</a>
                 </li>
             </ul>
             </div>
@@ -42,47 +45,48 @@
                                 <div class="span3">
 
                                     <div class="control-group">
-                                        <input type="text" class="input-medium mydata" id="name" placeholder="客户姓名">
+                                        <input type="text" class="input-medium mydata" id="name" placeholder="客户姓名" value="{{customer['name']}}">
                                     </div>
                                     <div class="control-group">
+
                                         <label class="radio">
-                                            <input type="radio" name="gender" id="sexRadios1" value="女士">女士
+                                            <input type="radio" name="gender" id="sexRadios1" value="女士" {% if customer["gender"]== "女士"%} checked=true{% endif %}>女士
                                         </label>
                                         <label class="radio">
-                                            <input type="radio" name="gender" id="sexRadios2" value="先生">先生
+                                            <input type="radio" name="gender" id="sexRadios2" value="先生" {% if customer["gender"]== "先生"%} checked=true{% endif %}>先生
                                         </label>
                                     </div>
                                     <div class="control-group">
                                         <label class="control-label">生日</label>
-                                        <input type="text" class="input-medium mydata" id="birth" placeholder="yyyy-mm-dd">
+                                        <input type="text" class="input-medium mydata" id="birth" placeholder="yyyy-mm-dd" value="{{customer['birthday']['date']}}">
                                     </div>
                                     <div class="control-group">
                                         <label class="control-label">行业</label>
-                                        <input type="text" class="input-medium mydata" id="sector" placeholder="行业">
+                                        <input type="text" class="input-medium mydata" id="sector" placeholder="行业" value="{{customer['sector']}}">
                                     </div>
                                     <div class="control-group">
                                         <label class="control-label">职业</label>
-                                        <input type="text" class="input-medium mydata" id="vocation" placeholder="职业">
+                                        <input type="text" class="input-medium mydata" id="vocation" placeholder="职业" value="{{customer['vocation']}}">
                                     </div>
                                 </div>
                                 
                                 <div class="span5">
                                     <div class="control-group">
-                                        <input type="text" class="input-small mydata" id="phone_w" placeholder="工作电话">
-                                        <input type="text" class="input-small mydata" id="phone_p" placeholder="私人电话">
-                                        <input type="text" class="input-small mydata" id="phone_h" placeholder="家庭电话">
+                                        <input type="text" class="input-small mydata" id="phone_w" placeholder="工作电话" value="{{customer['phone']['work']}}">
+                                        <input type="text" class="input-small mydata" id="phone_p" placeholder="私人电话" value="{{customer['phone']['personal']}}">
+                                        <input type="text" class="input-small mydata" id="phone_h" placeholder="家庭电话" value="{{customer['phone']['home']}}">
                                     </div>
                                     <div class="control-group">
-                                        <input type="text" class="input-medium mydata" id="email_w" placeholder="工作邮箱">
-                                        <input type="text" class="input-medium mydata" id="email_p" placeholder="私人邮箱">
+                                        <input type="text" class="input-medium mydata" id="email_w" placeholder="工作邮箱" value="{{customer['email']['work']}}">
+                                        <input type="text" class="input-medium mydata" id="email_p" placeholder="私人邮箱" value="{{customer['email']['personal']}}">
                                     </div>
                                     <div class="control-group">
                                         <label class="control-label">公司名称</label>
-                                        <input type="text" class="input-large mydata" id="company" placeholder="公司">
+                                        <input type="text" class="input-large mydata" id="company" placeholder="公司" value="{{customer['company']}}">
                                     </div>
                                     <div class="control-group">
                                         <label class="control-label">家庭住址</label>
-                                        <input type="text" class="input-large mydata" id="home_addr" placeholder="家庭住址">
+                                        <input type="text" class="input-large mydata" id="home_addr" placeholder="家庭住址" value="{{customer['home_addr']}}">
                                     </div>                                
                                 </div>
                             </div>  
@@ -94,8 +98,13 @@
                                             <input type="text" class="input-mini mydata" id="input_like" placeholder="爱好">
                                             <a class="btn btn-primary btn-mini" id="btn_like_add" href="">添加</a>
                                             <div id="likes">
+
                                                 <ul class="unstyled">
+                                                    {% for item in customer["likes"]%}
+                                                         <li><a class="btn_remove" href="#" tdata="{{item}}"><i class="icon-remove"></i></a>{{item}}</li>
+                                                    {% endfor %}
                                                 </ul>
+
                                             </div>
                                         </div>
                                     </div>
@@ -108,6 +117,9 @@
                                             <a class="btn btn-primary btn-mini" id="btn_wish_add" href="">添加</a>
                                             <div id="wishs">
                                                 <ul class="unstyled">
+                                                    {% for item in customer["wishs"]%}
+                                                    <li><a class="btn_remove" href="#" tdata="{{item}}"><i class="icon-remove"></i></a>{{item}}</li>
+                                                    {% endfor %}
                                                 </ul>
                                             </div>
                                         </div>
@@ -121,7 +133,9 @@
                             <form class="form-inline" action="">
                                 <label class="mylabel">相关人员 <a id="btn_relevants_add" href="#"><i class="icon-plus-sign"></i></a></label>
                                 <div id="relevants">
+                                    {% if customer["relevance_people"]==[]%}
                                     <div class="relevant" id="relevant_o">
+
                                         <input type="text" class="input-small mydata r_name" placeholder="姓名">
                                         <select class="span1 r_relation">
                                             <option value="">关系</option>
@@ -133,12 +147,30 @@
                                         <input type="text" class="input-medium mydata r_email" placeholder="E-mail">
                                         <input type="text" class="input-large mydata r_remark" placeholder="备注">
                                     </div>
+                                    {% else %}
+                                        {% for item in customer["relevance_people"]%}
+                                        <div class="relevant" {%if loop.index == 1 %} id="relevant_o" {% endif %}>
+
+                                            <input type="text" class="input-small mydata r_name" placeholder="姓名" value="{{item['name']}}">
+                                            <select class="span1 r_relation" >
+                                                <option value="">关系</option>
+                                                {% for i in g.dbs.tags("relation_h").get_tags() %}
+                                                <option value="{{i|safe}}" {%if item['relation'] == i%} selected=true{%endif%}>{{i|safe}}</option>
+                                                {% endfor %}
+                                            </select>
+                                            <input type="text" class="input-small mydata r_phone" placeholder="电话" value="{{item['phone']}}">
+                                            <input type="text" class="input-medium mydata r_email" placeholder="E-mail" value="{{item['email']}}">
+                                            <input type="text" class="input-large mydata r_remark" placeholder="备注" value="{{item['remark']}}">
+                                        </div>
+                                        {% endfor %}
+                                    {% endif%}
                                 </div>
                             </form>
                                 
                             <form class="form-inline" action="">
                                 <label class="mylabel">社会关系 <a id="btn_socials_add" href="#"><i class="icon-plus-sign"></i></a></label>
                                 <div id="socials">
+                                    {% if customer["social"]==[]%}
                                     <div class="social" id="social_o">
                                         <input type="text" class="input-small mydata s_name" placeholder="姓名">
                                         <select class="span2 s_relation">
@@ -149,6 +181,20 @@
                                         </select>
                                         <input type="text" class="input-xlarge mydata s_remark" placeholder="备注">
                                     </div>
+                                    {% else%}
+                                        {% for item in customer['social']%}
+                                        <div class="social" {%if loop.index == 1 %} id="social_o" {% endif %} >
+                                            <input type="text" class="input-small mydata s_name" placeholder="姓名" value="{{item['name']}}">
+                                            <select class="span2 s_relation">
+                                                <option value="">关系</option>
+                                                {% for i in g.dbs.tags("relation_s").get_tags() %}
+                                                <option value="{{i|safe}}" {%if item['relation'] == i%} selected=true{%endif%}>{{i|safe}}</option>
+                                                {% endfor %}
+                                            </select>
+                                            <input type="text" class="input-xlarge mydata s_remark" placeholder="备注" value="{{item['remark']}}">
+                                        </div>
+                                        {% endfor%}
+                                    {% endif %}
                                 </div>
                                                                 
                             </form>
@@ -158,13 +204,13 @@
                                     <!--
                                     <input type="text" class="input-small mydata" id="channel" placeholder="来源渠道">
                                      -->
-                                    <select class="span2" id="channel">
+                                    <select class="span2" id="channel" >
                                             <option value="">来源渠道</option>
                                             {% for i in g.dbs.tags("channel").get_tags() %}
-                                            <option value="{{i|safe}}">{{i|safe}}</option>
+                                            <option value="{{i|safe}}" {%if customer['channel']['method'] == i%} selected=true{%endif%}>{{i|safe}}</option>
                                             {% endfor %}
                                     </select>
-                                    <input type="text" class="input-small mydata" id="introducer" placeholder="介绍人">
+                                    <input type="text" class="input-small mydata" id="introducer" placeholder="介绍人" value="{{customer['channel']['name']}}">
 
                                 </form>
                                 
@@ -181,7 +227,7 @@
                             </div>
                         </div>
                     </div>
-                <a class="btn btn-success btn-large" id="btn_submit" href="">提交</a> 
+                <a class="btn btn-success btn-large" id="btn_submit" href="">保存</a>
             </div>
             
             
@@ -203,7 +249,7 @@
     var vocation = {{g.dbs.tags("vocation").get_json()|safe}};
     var likes = {{g.dbs.tags("likes").get_json()|safe}};
     
-    var customer={likes:[],wishs:[]};
+    var customer={{customer|jsonify|safe}};
     
     $(function(){ 
       
@@ -276,21 +322,7 @@
                               $(this).parent().remove();
                               return false;
                               });
-      function set_form(customer){
-          var c = Customer.create(customer);
-          $($("input[value="+ c.get("gender")+"]")).attr("checked",true);
-          $("input#birth").val(c.get("birthday").date);
-          $('input#sector').val(c.get("sector"));
-          $('input#vocation').val("vocation");
 
-          $('input#phone_w').val(c.get("phone").work);
-          $('input#phone_p').val(c.get("phone").personal);
-          $('input#phone_h').val(c.get("phone").home);
-          $('input#email_w').val(c.get("email").work);
-          $('input#email_p').val(c.get("email").personal);
-          $("input#company").val(c.get("company"));
-          $('input#home_addr').val(c.get("home_addr"));
-      }
       $('a#btn_submit').click( function(){
             customer.type = "customer";
             customer.manager = "{{ session['_id'] }}";
@@ -334,12 +366,14 @@
 
             var request = $.ajax({
                 type: "POST",
-                url: "/api/customer/add",
+                url: "/api/customer/save",
                 contentType:"application/json",
                 data: JSON.stringify(customer),
                 success: function(data) {
                     $('.result').html(data);
-                    location = "/customer";
+                    location = "/customer/{{customer['_id']}}";
+
+
                 }
             });
             return false;

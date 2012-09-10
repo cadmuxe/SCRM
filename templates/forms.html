@@ -87,23 +87,8 @@
             $( "#contact_attend").tokenInput("add",forms_cal.attend[i]);
         }
     }
-    function new_cal(){
-        var cal={};
-        cal.type = "事务";
-        cal.manager = "{{ session['_id'] }}";
-        cal.attend = [];
-        cal.title = '';
-        cal.start = '';
-        cal.end = '';
-        cal.allDay = true;
-        cal.location = '';
-        cal.contact_type = '';
-        cal.spending = '';
-        cal.remark = '';
-        cal.finished= false;
-        return cal;
-    }
-    function forms_get_cal(){
+
+    function get_cal(){
         forms_cal.type = "事务";
         forms_cal.manager = "{{ session['_id'] }}";
         var tokens = $( "#contact_attend" ).tokenInput('get');
@@ -130,12 +115,20 @@
 
         return forms_cal;
     }
-    function get_cal_new(){
-        forms_cal =new_cal();
-        return forms_get_cal();
-    }
-    function get_cal_update(){
-        return forms_get_cal();
+    function clear_cal(){
+        forms_cal={};
+        $("#contact_title").val("");
+        $('#contact_start_date').val("")
+        $("#contact_start_time").val("")
+        $('#contact_end_date').val("")
+        $("#contact_end_time").val("")
+        $('#allDay').prop("checked", false);
+        $("#contact_location").val("");
+        $('#contact_type').val("");
+        $("#contact_spend").val("");
+        $("#contact_remark").val("");
+        $( "#contact_attend").tokenInput("clear");
+        return true;
     }
 </script>
 
@@ -167,27 +160,47 @@
     </div>
     <div class="control-group">
         <label class="control-label">行业</label>
-        <input type="text" class="input-medium mydata" id="project_sector" placeholder="行业">
+        <div class="controls">
+            <input type="text" class="input-medium mydata" id="project_sector" placeholder="行业">
+        </div>
     </div>
     <hr>
     <div class="control-group">
         <label class="control-label">发行总额</label>
-        <input type="text" class="input-medium mydata" id="scale" placeholder="发行总额">
+        <div class="controls input-append">
+        <input type="text" class="input-small mydata" id="scale" placeholder="发行总额"><span class="add-on">万</span>
+        </div>
     </div>
     <div class="control-group">
         <label class="control-label">分红</label>
-        <input type="text" class="input-medium mydata" id="income_distribution" placeholder="分红">
+        <div class="controls input-append">
+            <input type="text" class="input-small mydata" id="income_distribution" placeholder="分红"><span class="add-on">%</span>
+        </div>
     </div>
     <div class="control-group">
         <label class="control-label">项目时长</label>
         <div class="controls input-append">
-            <input type="text" class="input-medium mydata" id="length_project" placeholder="时长"><span class="add-on">年</span>
+            <input type="text" class="input-small mydata" id="length_project" placeholder="时长"><span class="add-on">年</span>
+        </div>
+    </div>
+    <div class="control-group">
+        <label class="control-label">项目状态</label>
+        <div class="controls">
+            <label class="radio">
+                <input type="radio" name="working" id="sexRadios1" value="可售">可售
+            </label>
+            <label class="radio">
+                <input type="radio" name="working" id="sexRadios2" value="关闭">关闭
+            </label>
+
         </div>
     </div>
     <hr>
     <div class="control-group">
         <label class="control-label">备注</label>
+        <div class="controls">
         <textarea type="text" class="input-xlarge"  id="remark"></textarea>
+        </div>
     </div>
 </form>
 
@@ -197,11 +210,11 @@
     });
     var form_project ={};
 
-    function form_get_project(){
+    function get_project(){
         form_project.issuer = $('#issuer').val();
         form_project.manager = "{{ session['_id'] }}";
         form_project.project_name = $("#project_name").val();
-        form_project.working = true;
+        form_project.working = $('input[name=working]:checked').val();
         form_project.project_sector = $('#project_sector').val();
         form_project.scale = $('#scale').val();
         form_project.income_distribution = $('#income_distribution').val();
@@ -209,20 +222,8 @@
         form_project.remark = $('#remark').val();
         return form_project;
     }
-    function new_project(){
-        var project={}
-        project.issuer = "";
-        project.manager = "{{ session['_id'] }}";
-        project.project_name = "";
-        project.working = true;
-        project.project_sector = "";
-        project.scale = "";
-        project.income_distribution ="";
-        project.length_project = "";
-        project.remark = "";
-        return project;
-    }
     function set_project(project){
+        form_project = project;
         $('#issuer').val(project.issuer);
         $("#project_name").val(project.project_name);
         $('#project_sector').val(project.project_sector);
@@ -230,6 +231,24 @@
         $('#income_distribution').val(project.income_distribution);
         $('#length_project').val(project.length_project);
         $('#remark').val(project.remark);
+        if(project.working == true){
+            $('input[value="可售"]').attr('checked',true);
+        }
+        else{
+            $('input[value="关闭"]').attr('checked',true);
+        }
+        return
+    }
+    function clear_project(){
+        form_project={};
+        $('#issuer').val("");
+        $("#project_name").val("");
+        $('#project_sector').val("");
+        $('#scale').val("");
+        $('#income_distribution').val("");
+        $('#length_project').val("");
+        $('#remark').val("");
+        $('input[name=working]').attr('checked',false);
     }
 
 </script>
@@ -299,18 +318,39 @@
         var projects  ={{g.dbs.get_json_working_project_list()|safe}};
         $('#contract_project').typeahead({source:projects,items:5,matcher:mymatcher_t})
     });
-
+    var _contract={};
     function get_contract(){
-        var contract={};
-        contract.user_id = "{{customer['_id']|safe}}";
-        contract.manager = "{{ session['_id'] }}";
-        contract.contract_date = $("#contract_date").val();
-        contract.contract_project = $('#contract_project').val();
-        contract.contract_start = $("#contract_start_date").val();
-        contract.contract_end = $("#contract_end_date").val();
-        contract.amount = $('#amount').val();
-        contract.remark = $('#remark').val();
-        return contract;
+        if(typeof(_contract) == {}){
+            _contract.user_id = "{{customer['_id']|safe}}";
+            _contract.manager = "{{ session['_id'] }}";
+        }
+        _contract.contract_date = $("#contract_date").val();
+        _contract.contract_project = $('#contract_project').val();
+        _contract.contract_start = $("#contract_start_date").val();
+        _contract.contract_end = $("#contract_end_date").val();
+        _contract.amount = $('#amount').val();
+        _contract.remark = $('#remark').val();
+        return _contract;
+    }
+    function set_contract(ctct){
+        _contract=ctct;
+        $("#contract_date").val(_contract.contract_date);
+        $('#contract_project').val(_contract.contract_project);
+        $("#contract_start_date").val(_contract.contract_start);
+        $("#contract_end_date").val(_contract.contract_end);
+        $('#amount').val(_contract.amount);
+        $('#remark').val(_contract.remark);
+        return true;
+    }
+    function clear_contract(){
+        _contract={};
+        $("#contract_date").val("");
+        $('#contract_project').val("");
+        $("#contract_start_date").val("");
+        $("#contract_end_date").val("");
+        $('#amount').val("");
+        $('#remark').val("");
+        return true;
     }
 </script>
 

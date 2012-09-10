@@ -38,7 +38,7 @@
 <script>
     $('#Modal_cal').modal('hide');
     $('#btn_add_cal').click(function(){
-        var cal = get_cal_update();
+        var cal = get_cal();
         var request = $.ajax({
             type: "POST",
             url: "/api/cal/save",
@@ -52,7 +52,7 @@
         return false;
     });
     $('#btn_add_delete').click(function(){
-        var cal = get_cal_update();
+        var cal = get_cal();
         url = '/api/cal/'+cal._id+'/delete';
         var request = $.ajax({
             type: "GET",
@@ -111,6 +111,7 @@
                 url: '/api/cal/'+calEvent._id+'/get',
                 dataType:'json',
                 success: function(data) {
+                    clear_cal();
                     set_cal(data);
                     $('#Modal_cal').modal('show');
                 }
@@ -118,7 +119,7 @@
 
         },
         dayClick: function(date, allDay, jsEvent, view) {
-            cal = new_cal();
+            cal = {};
             cal.allDay = allDay;
             d = date;
             s = d.toISOString().split('T');

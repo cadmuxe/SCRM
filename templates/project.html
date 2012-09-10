@@ -22,26 +22,99 @@
             <div class="" style="padding: 8px 0; margin-right:20px;">
             <ul class="nav nav-list">
                 <li class="nav-header">
-                    客户管理
-                </li>
-                <li>
-                    <a href="/customer"><i class="icon-list"></i>列表</a>
+                    管理
                 </li>
                 <li class="active">
-                    <a href="/customer_add"><i class="icon-edit"></i>{{nav}}</a>
+                    <a href="/project"><i class="icon-list"></i>项目管理</a>
+                </li>
+                <li class="nav-header">
+                    设置
+                </li>
+                <li>
+                    <a href="/settingss"><i class="icon-list"></i>综合设置</a>
                 </li>
             </ul>
             </div>
         </div>
         <div class="span10">
+            <table class="table table-condensed">
+                <thead>
+                <tr>
+                    <th>#</th>
+                    <th>发行方</th>
+                    <th>项目名</th>
+                    <th>总额</th>
+                    <th>项目时长</th>
+                    <th>状态</th>
+
+                </tr>
+                </thead>
+                <tbody>
+                {% for project in project_list%}
+                <tr>
+                    <td>{{loop.index}}</td>
+                    <td>{{project['issuer']}}</td>
+                    <td>{{project['project_name']}}</td>
+                    <td>{{project['scale']}}</td>
+                    <td>{{project['length_project']}}</td>
+                    <td>{% if project['working'] == True %}可售{%else%}关闭{%endif%}</td>
+                    <td><a href="#" class="edit" data-id="{{project['_id']}}">Edit</a></td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
 
         </div>
+    </div>
+</div>
+<div class="modal hide fade" id="Modal_project">
+    <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal">×</button>
+        <h3>项目</h3>
+    </div>
+    <div class="modal-body">
+        {% import 'forms.html' as forms with context %}
+        {{forms.project()}}
+
+    </div>
+    <div class="modal-footer">
+        <a href="#" class="btn" data-dismiss="modal">Close</a>
+        <a href="#" class="btn btn-primary" id="btn_add_cal">保存</a>
     </div>
 </div>
 {% endblock %}
 
 {% block js %}
 <script>
+    $('#Modal_project').modal('hide');
+    $(".edit").click(function(evn){
+        var request = $.ajax({
+            type: "GET",
+            url: "/api/project/"+$(evn.currentTarget).data('id'),
+            dataType:'json',
+            success: function(data) {
+                clear_project();
+                set_project(data);
+            }
+        });
+
+        $('#Modal_project').modal('show');
+        return false;
+    });
+    $('#btn_add_cal').click(function(){
+       var p = get_project();
+        var request = $.ajax({
+           type:"POST",
+            url:"/api/project/save",
+            contentType:"application/json",
+            data: JSON.stringify(p),
+            success: function(data) {
+            }
+        });
+        $('#Modal_project').modal('hide');
+    });
+
+
 
  </script>
 {% endblock %}

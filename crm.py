@@ -4,6 +4,9 @@ from flask import render_template as r_t
 import pymongo, hashlib, json, random,time,datetime
 from bson.objectid import ObjectId
 import dbs,uti
+from tornado.wsgi import WSGIContainer
+from tornado.httpserver import HTTPServer
+from tornado.ioloop import IOLoop
 
 
 app = Flask(__name__)
@@ -39,7 +42,9 @@ def filter_how_long(t):
         return u"无联络"
     else:
         return t
-
+@app.template_filter('jsonify')
+def filter_jsonify(dic):
+    return uti.myjsonify(dic)
 
 
 
@@ -53,7 +58,7 @@ def filter_how_long(t):
 # settings
 class settings():
     def __init__(self):
-        self.navbar = [("/",u"首页"),("/cal",u"日历"),("/customer",u"客户管理"),("#",u"综合管理"),("#",u"分析")]
+        self.navbar = [("/",u"首页"),("/cal",u"日历"),("/customer",u"客户管理"),("/project",u"综合管理"),("#",u"分析")]
     def refresh(self):
         self.__init__()
 
@@ -72,26 +77,27 @@ def auth():
 # JSON API
 @app.route('/api/<type>/<action>',methods=['GET','POST'])
 def api(type,action):
+    if auth() == False:
+        return "not_login"
     a = g.db["settings"].find_one({"type":"sector"})
     return uti.myjsonify(a)
 
 @app.route('/api/tags/<tag_type>/<tag_name>/<action>/',methods=['GET'])
 def api_tags(tag_type,tag_name,action):
+    if auth() == False:
+        return "not_login"
     if action == 'add':
         dbs.tags(tag_type).add_tag(tag_name)
         return "OK"
 
-@app.route('/api/customer/<query>')
-def api_customer_token(query):
-    return "hi"
-
 @app.route('/api/customer/add',methods=['POST'])
 def api_customer_add():
+    if auth() == False:
+        return "not_login"
     if request.method == 'POST':
         customer = dbs.customer(request.json)
         customer.save()
-
-        if customer["birthday"] != "0":
+        if customer["birthday"] != 0:
             d = customer["birthday"].split('-')
             t = datetime.datetime(int(d[0]),int(d[1]),int(d[2]))
             birthday = {"type":"birthday",
@@ -103,18 +109,30 @@ def api_customer_add():
                         "editable":"false",
                         "remark":""
             }
-            customer["birthday"] = {"_id":memorial(birthday).save()["_id"],"date":uti.time_datetime_to_string_date(t)}
+            customer["birthday"] = {"_id":dbs.memorial(birthday).save()["_id"],"date":uti.time_datetime_to_string_date(t)}
             customer.save()
     return "ok"
+@app.route('/api/customer/save',methods=['POST'])
+def api_customer_save():
+    if auth() == False:
+        return "not_login"
+    if request.method == 'POST':
+        i=dbs.customer(request.json).save()
+    return uti.myjsonify(i['_id'])
 
 @app.route('/api/cal/save',methods=['POST'])
 def api_cal_save():
+    if auth() == False:
+        return "not_login"
     if request.method == 'POST':
         c=dbs.cal(request.json).save()
     return uti.myjsonify(c.get_python())
 
+
 @app.route('/api/cal/<_id>/<action>',methods=['GET','POST'])
 def api_cal_update(_id,action):
+    if auth() == False:
+        return "not_login"
     c =dbs.cal(_id)
     if action =='get':
         return uti.myjsonify(c.get_python())
@@ -143,31 +161,53 @@ def api_cal_update(_id,action):
 
 @app.route('/api/contract/save',methods=['POST'])
 def api_contract_save():
+    if auth() == False:
+        return "not_login"
     if request.method == 'POST':
         i=dbs.contract(request.json).save()
     return uti.myjsonify(i['_id'])
-@app.route('/api/customer/save',methods=['POST'])
-def api_customer_save():
-    if request.method == 'POST':
-        i=dbs.customer(request.json).save()
-    return uti.myjsonify(i['_id'])
+@app.route('/api/contract/<uid>',methods=['GET'])
+def api_contract_get(uid):
+    if auth() == False:
+        return "not_login"
+    c = dbs.contract(ObjectId(uid))
+    return uti.myjsonify(c.get_python())
+
 @app.route('/api/project/save',methods=['POST'])
 def api_project_save():
+    if auth() == False:
+        return "not_login"
     if request.method == 'POST':
         i=dbs.project(request.json).save()
     return uti.myjsonify(i['_id'])
+@app.route('/api/project/<uid>',methods=['GET'])
+def api_project_get(uid):
+    if auth() == False:
+        return "not_login"
+    p = dbs.project(ObjectId(uid))
+    return uti.myjsonify(p.get_python())
 
 @app.route("/api/cal",methods=['GET'])
 def api_cal():
+    if auth() == False:
+        return "not_login"
     start = dbs.get_datetime_from_stamp(request.args.get('start'))
     end = dbs.get_datetime_from_stamp(request.args.get('end'))
     clist = dbs.cal.objects.find_by_period(start,end)
     clist = clist.get_python()
     return uti.myjsonify(clist)
 
+@app.route('/api/cal/<uid>',methods=['GET'])
+def api_cal_get(uid):
+    if auth() == False:
+        return "not_login"
+    c = dbs.cal(ObjectId(uid))
+    return uti.myjsonify(c.get_python())
+
 @app.route("/api/todo",methods=['GET'])
 def api_todo():
-
+    if auth() == False:
+        return "not_login"
     (not_done_today,today) = dbs.cal.objects.find_by_period_ascend(dbs.get_datetime_period()['today'][0],
         dbs.get_datetime_period()['today'][1])
     today = today.get_python()
@@ -184,6 +224,8 @@ def api_todo():
 
 @app.route("/api/memorial",methods=['GET'])
 def api_memorial():
+    if auth() == False:
+        return "not_login"
     start = dbs.get_datetime_from_stamp(request.args.get('start'))
     end = dbs.get_datetime_from_stamp(request.args.get('end'))
     mlist = dbs.memorial.objects.find_by_period(start,end)
@@ -194,6 +236,8 @@ def api_memorial():
 
 @app.route('/api/customer/list',methods=['POST'])
 def api_customer_list():
+    if auth() == False:
+        return "not_login"
     if request.method == 'POST':
         each_page = 10              # how many items in each page
         page_now = request.form['page']
@@ -226,6 +270,8 @@ def api_customer_list():
     return "ok"
 @app.route('/api/customer/contact_list',methods=['GET'])
 def api_customer_contact_list():
+    if auth() == False:
+        return "not_login"
     if request.method == 'GET':
         list = dbs.customer.objects.not_contact_list()
         r = list.get_python(["_id","name","type","gender","company","amount","contact_record","how_long"])
@@ -247,11 +293,14 @@ def home():
 # Customer
 @app.route('/customer')
 def customer_list():
+    if auth() == False:
+        return redirect(url_for('login'))
     return r_t('customer_list.html')
 
 @app.route('/customer/<uid>')
 def customer(uid):
-
+    if auth() == False:
+        return redirect(url_for('login'))
     customer = dbs.customer(uid).get_python()
     contacts =dbs.cal.objects.find_by_attend(uid).get_python()
     contracts = dbs.contract.objects.find_by_customer_id(uid).get_python()
@@ -264,15 +313,56 @@ def customer(uid):
 
 @app.route('/customer_add',methods=['GET','POST'])
 def customer_add():
+    if auth() == False:
+        return redirect(url_for('login'))
     if request.method == 'GET':
         customer_id_list = dbs.get_json_customer_and_id_list()
         return r_t('customer_item.html',customer_id_list = customer_id_list,nav=u"增加客户")
     else:
         return "go"
 
+@app.route('/customer/edit/<uid>')
+def customer_edit(uid):
+    if auth() == False:
+        return redirect(url_for('login'))
+    if request.method == 'GET':
+        customer = dbs.customer(uid).get_python()
+        customer_id_list = dbs.get_json_customer_and_id_list()
+        return r_t('customer_item_edit.html',customer = customer,customer_id_list = customer_id_list)
+    else:
+        return "go"
+
 @app.route('/cal',methods=['GET'])
 def cal():
+    if auth() == False:
+        return redirect(url_for('login'))
     return r_t('cal.html')
+
+@app.route('/project',methods=['GET'])
+def project():
+    if auth() == False:
+        return redirect(url_for('login'))
+    project_list = dbs.project.objects.find({})
+    return r_t('project.html',project_list = project_list)
+
+@app.route('/settingss',methods=['GET','POST'])
+def settingss():
+    if auth() == False:
+        return redirect(url_for('login'))
+    if request.method == 'GET':
+        return r_t('settings.html')
+    else:
+        relation_h = request.form['relation_h']
+        relation_s = request.form['relation_s']
+        channel = request.form['channel']
+        contact_type = request.form['contact_type']
+
+        dbs.tags('relation_h').set_tags_string(relation_h)
+        dbs.tags('relation_s').set_tags_string(relation_s)
+        dbs.tags('channel').set_tags_string(channel)
+        dbs.tags('contact_type').set_tags_string(contact_type)
+
+        return redirect(url_for('settingss'))
 
 @app.route('/login', methods=['GET','POST'])
 def login():
@@ -282,16 +372,17 @@ def login():
         username = request.form['username']
         passwd = hashlib.md5(request.form['passwd']).hexdigest()
         u = dbs.db['users'].find_one({"username":username,"passwd":passwd})
-        u = uti.get_pure_dict(u)
         if u:
             session['_id'] = u['_id']
             session['name'] = u['name']
             session['type'] = u['type']
             return redirect(url_for('home'))
         else:
-            return "no"
+            return redirect(url_for('login'))
 @app.route('/print_info')
 def print_info():
+    if auth() == False:
+        return redirect(url_for('login'))
     str = session['_id']
     return str
 
@@ -302,3 +393,6 @@ def logout():
 
 if __name__ == '__main__':
     app.run(debug=True)
+    #http_server = HTTPServer(WSGIContainer(app))
+    #http_server.listen(5000)
+    #IOLoop.instance().start()

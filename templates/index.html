@@ -67,8 +67,10 @@
 
 
 {% block js %}
-<script type="text/javascript" src="/static/js/ember-0.9.8.1.js"></script>
+<script type="text/javascript" src="/static/js/ember-0.9.8.1.min.js"></script>
 <script type="text/javascript" src="/static/js/models.js"></script>
+
+
 
 {% raw %}
 <script type="text/x-handlebars" data-template-name="todo-nav">
@@ -316,16 +318,10 @@
             });
         },
         saveCal:function(event){
+            var cal = IndexApp.mainController.get('calItem');
+            cal.set("attend",$( "#contact_attend" ).tokenInput('get'));
+            cal.save();
             IndexApp.stateManager.goToState(IndexApp.mainController.get('current'));
-            var request = $.ajax({
-                type:'POST',
-                url:'/api/cal/save',
-                contentType:"application/json",
-                data:JSON.stringify(IndexApp.mainController.get('calItem').get_content()),
-                dataType:'json',
-                success:function(data){
-                }
-            })
 
         },
         backTodo:function(event){
