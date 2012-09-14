@@ -149,13 +149,13 @@ html = "<tbody>"
         return false;
     });
     $('#btn_prev').click(function(){
-        page_now +=1;
+        page_now -=1;
         if(page_now>pages){page_now=pages;}
         updata_list(page_now);
         return false;
     });
     $('#btn_next').click(function(){
-        page_now -=1;
+        page_now +=1;
         if(page_now<1){page_now=1;}
         updata_list(page_now);
         return false;

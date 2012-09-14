@@ -240,7 +240,7 @@ def api_customer_list():
         return "not_login"
     if request.method == 'POST':
         each_page = 10              # how many items in each page
-        page_now = request.form['page']
+        page_now = int(request.form['page'])
         list = dbs.customer.objects.search({"manager":ObjectId(session['_id'])},
                 request.form['query'],
                 ["name","type","gender","company","sector","vocation"],
@@ -392,7 +392,7 @@ def logout():
     return redirect(url_for('login'))
 
 if __name__ == '__main__':
-    #app.run(debug=True)
-    http_server = HTTPServer(WSGIContainer(app))
-    http_server.listen(5000)
-    IOLoop.instance().start()
+    app.run(debug=True)
+    #http_server = HTTPServer(WSGIContainer(app))
+    #http_server.listen(5000)
+    #IOLoop.instance().start()
