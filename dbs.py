@@ -276,7 +276,7 @@ class customerQuery(BaseQuery):
         self._collection = "customer"
 
     def not_contact_list(self):
-        cursor = db[self._collection].find({"how_long":{"$gte":10}}).sort("how_long",pymongo.DESCENDING)
+        cursor = db[self._collection].find({"how_long":{"$gte":10}}).sort("how_long",pymongo.DESCENDING).limit(15)
         return querySet(self._collection,cursor)
 
 class calQuery(BaseQuery):

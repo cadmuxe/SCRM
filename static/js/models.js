@@ -29,7 +29,15 @@ Customer = Ember.Object.extend({
                 'relevance_people','social','channel'];
             if (this.get('_id') != undefined){rtn.push('_id');}
             return this.getProperties(rtn);
-        }
+        },
+        view_how_long:function(){
+            if (this.how_long != 10000){
+                return this.how_long;
+            }
+            else{
+                return "无联络信息";
+            }
+        }.property('how_long')
 
     });
 
