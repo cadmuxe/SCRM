@@ -112,7 +112,7 @@ def api_cal_save():
     if auth() == False:
         return "not_login"
     if request.method == 'POST':
-        c=dbs.cal(request.json).save()
+        c=dbs.cal(request.json).update()
     return uti.myjsonify(c.get_python())
 
 

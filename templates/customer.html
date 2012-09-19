@@ -160,7 +160,7 @@
                     <tr>
                         <td>{{loop.index}}</td>
                         <td>{{contract["contract_date"]|date}}</td>
-                        <td>{{contract["contract_project"]}}</td>
+                        <td>{{contract["contract_project"]['name']}}</td>
                         <td>{{contract["contract_start"]|date}} 至 {{contract["contract_end"]|date}}</td>
                         <td>{{contract["amount"]}}</td>
                         <td><a href="#" class="edit_contract" data-id="{{contract['_id']}}">Edit</a></td>
@@ -256,6 +256,7 @@
     $("#btn_contact").click(function(){
         $("#Modal_cal").modal("show");
         clear_cal();
+        $( "#contact_attend").tokenInput("add", {_id:'{{customer['_id']|safe}}',name:'{{customer['name']|safe}}'});
         return false;
     });
     $("#btn_contract").click(function(){

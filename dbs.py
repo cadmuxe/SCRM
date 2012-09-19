@@ -317,11 +317,11 @@ class memorialQuery(BaseQuery):
         search_helper_end = end.replace(year = 1901)
         cursor = db[self._collection].find({"search_helper":
                                                     {"$gte":search_helper_start,"$lte":search_helper_end}})
-        set = querySet(self._collection)
+        set = []
         for i in cursor:
             mm = memorial(i)
             mm.set_calculate_year(start.year)
-            set.enlargeSet(mm)
+            set.append(mm)
         return set
 
 class contractQuery(BaseQuery):
@@ -365,7 +365,7 @@ class customer(BaseDocument):
         self._doc["amount"] = amount
         return
     def _c_contact(self):
-        c = db['cal'].find_one({"attend._id":self._doc['_id'],"type":u"事务","$orderby":{"start":-1}})
+        c = db['cal'].find({"attend._id":self._doc['_id'],"type":u"事务"}).sort("start", pymongo.DESCENDING)[0]
         if c == None:
             self._doc["contact_record"] = {'_id':None,'date':u"无联络信息"}
             self._doc["how_long"] = 10000
@@ -418,11 +418,18 @@ class customer(BaseDocument):
 
 
 
+
 class cal(BaseDocument):
     objects = calQuery()
     def __init__(self,c):
         self._collection = "cal"
         super(cal,self).__init__(c)
+    def update(self):
+        self.calculate()
+        self.save()
+        for i in self._doc["attend"]:
+            customer(i['_id']).update()
+        return self
 
 
 class memorial(BaseDocument):
@@ -463,7 +470,7 @@ class contract(BaseDocument):
     def _c_project(self):
         p =  project.objects.find_by_project_name(self._doc['contract_project']['name'])
         if p == False:
-            p = project({'project_name':self._doc['contract_project'],"working":True}).save()
+            p = project({'project_name':self._doc['contract_project']['name'],"working":True}).save()
         self._doc['contract_project']['_id'] = p['_id']
 
 

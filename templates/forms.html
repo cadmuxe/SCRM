@@ -213,6 +213,7 @@
     function get_project(){
         form_project.issuer = $('#issuer').val();
         form_project.manager = "{{ session['_id'] }}";
+
         form_project.project_name = $("#project_name").val();
         form_project.working = $('input[name=working]:checked').val();
         form_project.project_sector = $('#project_sector').val();
@@ -320,12 +321,11 @@
     });
     var _contract={};
     function get_contract(){
-        if(typeof(_contract) == {}){
-            _contract.user_id = "{{customer['_id']|safe}}";
-            _contract.manager = "{{ session['_id'] }}";
-        }
+        _contract.user_id = "{{customer['_id']|safe}}";
+        _contract.manager = "{{ session['_id'] }}";
         _contract.contract_date = $("#contract_date").val();
-        _contract.contract_project = $('#contract_project').val();
+        var contract_project = {'name':$('#contract_project').val()}
+        _contract.contract_project = contract_project;
         _contract.contract_start = $("#contract_start_date").val();
         _contract.contract_end = $("#contract_end_date").val();
         _contract.amount = $('#amount').val();
@@ -335,7 +335,7 @@
     function set_contract(ctct){
         _contract=ctct;
         $("#contract_date").val(_contract.contract_date);
-        $('#contract_project').val(_contract.contract_project);
+        $('#contract_project').val(_contract.contract_project.name);
         $("#contract_start_date").val(_contract.contract_start);
         $("#contract_end_date").val(_contract.contract_end);
         $('#amount').val(_contract.amount);
