@@ -97,27 +97,14 @@ def api_customer_add():
     if request.method == 'POST':
         customer = dbs.customer(request.json)
         customer.save()
-        if customer["birthday"] != 0:
-            d = customer["birthday"].split('-')
-            t = datetime.datetime(int(d[0]),int(d[1]),int(d[2]))
-            birthday = {"type":"birthday",
-                        "user_id":customer["_id"],
-                        "title":customer["name"]+u"的生日",
-                        "allDay":"false",
-                        "start":t,
-                        "end":0,
-                        "editable":"false",
-                        "remark":""
-            }
-            customer["birthday"] = {"_id":dbs.memorial(birthday).save()["_id"],"date":uti.time_datetime_to_string_date(t)}
-            customer.save()
+        customer.update()
     return "ok"
 @app.route('/api/customer/save',methods=['POST'])
 def api_customer_save():
     if auth() == False:
         return "not_login"
     if request.method == 'POST':
-        i=dbs.customer(request.json).save()
+        i=dbs.customer(request.json).update()
     return uti.myjsonify(i['_id'])
 
 @app.route('/api/cal/save',methods=['POST'])
@@ -138,10 +125,10 @@ def api_cal_update(_id,action):
         return uti.myjsonify(c.get_python())
     if action =='done':
         c['finished']= True
-        c.save()
+        c.update()
     if action == 'not_done':
         c['finished']= False
-        c.save()
+        c.update()
     if action == 'delete':
         c.delete()
     if action == 'drop' and request.method =='POST':
@@ -150,12 +137,12 @@ def api_cal_update(_id,action):
         c["start"] = c["start"] + delta
         c["end"] = c["end"] +delta
         c["allDay"] = change["allDay"]
-        c.save()
+        c.update()
     if action == 'resize' and request.method =='POST':
         change = request.json
         delta = datetime.timedelta(change["day"],change["minute"]*60)
         c["end"] = c["end"] +delta
-        c.save()
+        c.update()
     return uti.myjsonify({'doc':'success'})
 
 
@@ -164,7 +151,7 @@ def api_contract_save():
     if auth() == False:
         return "not_login"
     if request.method == 'POST':
-        i=dbs.contract(request.json).save()
+        i=dbs.contract(request.json).update()
     return uti.myjsonify(i['_id'])
 @app.route('/api/contract/<uid>',methods=['GET'])
 def api_contract_get(uid):
@@ -178,7 +165,7 @@ def api_project_save():
     if auth() == False:
         return "not_login"
     if request.method == 'POST':
-        i=dbs.project(request.json).save()
+        i=dbs.project(request.json).update()
     return uti.myjsonify(i['_id'])
 @app.route('/api/project/<uid>',methods=['GET'])
 def api_project_get(uid):
@@ -232,6 +219,7 @@ def api_memorial():
     mmlist = []
     for m in mlist:
         mmlist.append({'_id':m["_id"],"title":m['title'],'start':m["this_year_start"]})
+
     return uti.myjsonify(mmlist)
 
 @app.route('/api/customer/list',methods=['POST'])

@@ -134,21 +134,22 @@ class tags:
 
 
 class querySet:
-    def __init__(self,collection,oset=[]):
+    def __init__(self,collection, o_set=[]):
         self.__collection = collection
         self.__sets = []
         self.__doc_class = globals()[collection]
-        if type(oset) == pymongo.cursor.Cursor:
-            for i in oset:
+        if type(o_set) == pymongo.cursor.Cursor:
+            for i in o_set:
                 self.__sets.append(self.__doc_class(i))
         else:
-            self.__sets = oset
+            self.__sets = o_set
 
     def enlargeSet(self,document):
         if isinstance(document,self.__doc_class) == False:
             raise ValueError
         else:
             self.__sets.append(document)
+        return self
     def count(self):
         return len(self.__sets)
 
@@ -191,26 +192,19 @@ class BaseDocument(object):
             try:
                 self._doc = db[self._collection].find_one({"_id":ObjectId(d)})
                 if self._doc is None:
-                    self._doc = {"doc":"NONE"}
+                    raise ValueError
             except:
-                print "Error"
                 raise ValueError
-        self.calculate()
+
         self.__python_helper={}
 
     def save(self):
-        if self._doc.has_key("_id"):
-            self.calculate()
-            db[self._collection].save(self._doc)
-        else:
-            db[self._collection].save(self._doc)
-            self.save()
+        db[self._collection].save(self._doc)
         return self
     def delete(self):
         return db[self._collection].remove(self._doc)
     def reload(self):
         self._doc = db[self._collection].find_one({"_id":ObjectId(self._doc["_id"])})
-        self.calculate()
         return self
     def validate(self):
         """
@@ -229,7 +223,13 @@ class BaseDocument(object):
         return self.__python_helper
 
     def calculate(self):
-        raise ValueError
+        if self._doc.has_key('_id') == False:
+            self.save()
+        return
+    def update(self):
+        self.calculate()
+        self.save()
+        return self
 
     def __iter__(self):
         return iter(self._doc)
@@ -245,7 +245,7 @@ class BaseQuery():
     def find(self,query={}):
         """
         """
-        sets_mongo_cursor = db[self._collection].find(query)
+        sets_mongo_cursor = db[self._collection].find(query).sort('_id',pymongo.DESCENDING)
         return querySet(self._collection,sets_mongo_cursor)
 
     def search(self,query,keys="",field_search=[]):
@@ -312,9 +312,10 @@ class memorialQuery(BaseQuery):
         """
         start, end datetime type
         """
-        search_helper_start =  start.replace(year = datetime.datetime.today().year)
-        search_helper_end = end.replace(year = datetime.datetime.today().year)
-        cursor = db[self._collection].find({"this_year_start":
+        print "new!!"
+        search_helper_start =  start.replace(year = 1901)
+        search_helper_end = end.replace(year = 1901)
+        cursor = db[self._collection].find({"search_helper":
                                                     {"$gte":search_helper_start,"$lte":search_helper_end}})
         set = querySet(self._collection)
         for i in cursor:
@@ -348,34 +349,73 @@ class customer(BaseDocument):
     def __init__(self,d):
         self._collection = "customer"
         super(customer,self).__init__(d)
-        self.save()
 
-    def __get_customer_total_contract_amount(self):
-        """ get customer's totally contract amount
-        """
+    def calculate(self):
+        if self._doc.has_key('_id') == False:
+            self.save()
+        self._c_birthday()
+        self._c_amount()
+        self._c_contact()
+
+    def _c_amount(self):
         amount = 0
         list = db["contract"].find({"user_id":self._doc["_id"]})
         for c in list:
             amount += int(c["amount"])
-        return amount
-    def calculate(self):
-        if self._doc.has_key('_id') == False:
-            self.save()
-        self._doc["amount"] = self.__get_customer_total_contract_amount()
-        try:
-            contact_record = db['cal'].find({"attend._id":self._doc['_id'],"type":u"事务"}).sort("start", pymongo.DESCENDING)[0]
-            self._doc["contact_record"] = {"_id":contact_record["_id"],
-                                           "date":uti.time_datetime_to_string_date(contact_record["start"])}
-        except:
-            self._doc["contact_record"]={}
-        if self._doc["contact_record"] !={}:
-            start = cal(self._doc["contact_record"]["_id"])["start"]
-            self._doc["how_long"] = (datetime.datetime.today() - start).days
-        else:
+        self._doc["amount"] = amount
+        return
+    def _c_contact(self):
+        c = db['cal'].find_one({"attend._id":self._doc['_id'],"type":u"事务","$orderby":{"start":-1}})
+        if c == None:
             self._doc["contact_record"] = {'_id':None,'date':u"无联络信息"}
             self._doc["how_long"] = 10000
+        else:
+            self._doc["contact_record"] = {"_id":c["_id"],
+                                           "date":uti.time_datetime_to_string_date(c["start"])}
+            start = cal(self._doc["contact_record"]["_id"])["start"]
+            self._doc["how_long"] = (datetime.datetime.today() - start).days
+        return
+    def _c_birthday(self):
+        date = self._doc["birthday"]["date"].strip()
+        if date == '':
+            return
+        d = date.split('-')
+        if len(d) == 3:
+            year = d[0]
+            month = d[1]
+            day = d[2]
+            b = year + '-' + month + '-' + day
+        elif len(d) == 2:
+            year = 1900
+            month = d[0]
+            day = d[1]
+            b = month + '-' + day
+        else:
+            return
+        t = datetime.datetime(int(year),int(month),int(day))
+        if self._doc['birthday'].has_key('_id'):
+            try:
+                m = memorial(self._doc['birthday']['_id'])
+                m['title'] = self._doc["name"]+u"的生日"
+                m['start'] = t
+                m.update()
+                self._doc["birthday"] = {"_id":m['_id'],"date":b}
+                return
+            except:
+                pass
+        birthday = {"type":"birthday",
+                    "user_id":self._doc["_id"],
+                    "title":self._doc["name"]+u"的生日",
+                    "allDay":"false",
+                    "start":t,
+                    "end":0,
+                    "editable":"false",
+                    "remark":""
+        }
+        m = memorial(birthday).update()
+        self._doc["birthday"] = {"_id":m['_id'],"date":b}
+        return
 
-        return self
 
 
 class cal(BaseDocument):
@@ -384,12 +424,6 @@ class cal(BaseDocument):
         self._collection = "cal"
         super(cal,self).__init__(c)
 
-    def calculate(self):
-        pass
-        #l=[]
-        #if self._doc.has_key("attend"):
-        #    for i in self._doc['attend']:
-        #        i['name'] = db['customer'].find_one(i['_id'])['name']
 
 class memorial(BaseDocument):
     objects = memorialQuery()
@@ -399,13 +433,21 @@ class memorial(BaseDocument):
         super(memorial,self).__init__(c)
 
     def set_calculate_year(self,year):
-        self.__this_year = year
-        self.calculate()
-    def calculate(self):
-        if self.__this_year == 0:
-            self.__this_year = datetime.datetime.today().year
-        d = self._doc["start"].replace(year = self.__this_year)
+        d = self._doc["start"].replace(year = year)
         self._doc["this_year_start"] = d
+    def _c_search_helper(self):
+        d = self._doc["start"].replace(year = 1901)
+        self._doc["search_helper"] = d
+    def _c_title(self):
+        if self._doc['type'] =='birthday':
+            user = customer(self._doc['user_id'])
+            self._doc['title'] = user['name'] + u'的生日'
+    def calculate(self):
+        if self._doc.has_key('_id') == False:
+            self.save()
+        self._c_search_helper()
+        self._c_title()
+        self.save()
 
 class contract(BaseDocument):
     objects = contractQuery()
@@ -414,8 +456,15 @@ class contract(BaseDocument):
         super(contract,self).__init__(c)
 
     def calculate(self):
-        if project.objects.find_by_project_name(self._doc['contract_project']) == False:
-            project({'project_name':self._doc['contract_project'],"working":True}).save()
+        if self._doc.has_key('_id') == False:
+            self.save()
+        self._c_project()
+        self.save()
+    def _c_project(self):
+        p =  project.objects.find_by_project_name(self._doc['contract_project']['name'])
+        if p == False:
+            p = project({'project_name':self._doc['contract_project'],"working":True}).save()
+        self._doc['contract_project']['_id'] = p['_id']
 
 
 class project(BaseDocument):
@@ -423,5 +472,3 @@ class project(BaseDocument):
     def __init__(self,p):
         self._collection = "project"
         super(project,self).__init__(p)
-    def calculate(self):
-        pass

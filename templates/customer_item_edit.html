@@ -329,10 +329,9 @@
             customer.name = $('input#name').val();
             customer.gender = $('input[name=gender]:checked').val();
             t = $("input#birth").val();
-            if (t != ""){
-                customer.birthday = t;   //服务器端转换成单独记录，存放id
-            }
-            else {customer.birthday = 0;}
+            var b = customer.birthday;
+            b['date'] =t;
+            customer.birthday=b;
             customer.sector = $('input#sector').val();
             customer.vocation = $('input#vocation').val();
 
