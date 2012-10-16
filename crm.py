@@ -3,10 +3,7 @@ from flask import Flask, g, request, session, redirect, url_for, jsonify
 from flask import render_template as r_t
 import pymongo, hashlib, json, random,time,datetime
 from bson.objectid import ObjectId
-import dbs,uti
-from tornado.wsgi import WSGIContainer
-from tornado.httpserver import HTTPServer
-from tornado.ioloop import IOLoop
+import dbs,uti,model
 
 
 app = Flask(__name__)
@@ -90,15 +87,6 @@ def api_tags(tag_type,tag_name,action):
         dbs.tags(tag_type).add_tag(tag_name)
         return "OK"
 
-@app.route('/api/customer/add',methods=['POST'])
-def api_customer_add():
-    if auth() == False:
-        return "not_login"
-    if request.method == 'POST':
-        customer = dbs.customer(request.json)
-        customer.save()
-        customer.update()
-    return "ok"
 @app.route('/api/customer/save',methods=['POST'])
 def api_customer_save():
     if auth() == False:
@@ -125,10 +113,10 @@ def api_cal_update(_id,action):
         return uti.myjsonify(c.get_python())
     if action =='done':
         c['finished']= True
-        c.update()
+        c.save()
     if action == 'not_done':
         c['finished']= False
-        c.update()
+        c.save()
     if action == 'delete':
         c.delete()
     if action == 'drop' and request.method =='POST':
@@ -262,10 +250,126 @@ def api_customer_contact_list():
         return "not_login"
     if request.method == 'GET':
         list = dbs.customer.objects.not_contact_list()
-        r = list.get_python(["_id","name","type","gender","company","amount","contact_record","how_long"])
+        r = list.get_python(["_id","name","type","gender","company","amount","contact_record","vocation"])
         return uti.myjsonify(r)
     return "ok"
 
+@app.route('/api/customer/name_list',methods=['GET'])
+def api_customer_name_list():
+    if auth() == False:
+        return "not_login"
+    return dbs.get_json_customer_list()
+
+@app.route('/api/customer/excel',methods=['GET','POST'])
+def api_customer_excel():
+    if auth() == False:
+        return "not_login"
+    if request.method == 'GET':
+        list = dbs.db['customer'].find().sort("_id", pymongo.ASCENDING)
+        cl = []
+        for c in list:
+            c = dbs.customer(c)
+            cc=[]
+            cc.append(c['type'])
+            cc.append(c['name'])
+            cc.append(c['gender'])
+            if c['birthday'].has_key('date'):
+                cc.append(c['birthday']['date'])
+            else:
+                cc.append('')
+            cc.append(c['company'])
+            cc.append(c['vocation'])
+            cc.append(c['phone']['work'])
+            cc.append(c['phone']['personal'])
+            cc.append(c['phone']['home'])
+            cc.append(c['email']['personal'])
+            cc.append(c['email']['work'])
+            cc.append(c['_id'])
+            cl.append(cc)
+        return uti.myjsonify(cl)
+
+    if request.method == 'POST':
+        change_list = request.json
+        update = {}
+        result = {'status':'ok','idlist':[]}
+        for c in change_list:
+            row = str(c[0])
+            column =c[1]
+            value=c[3]
+            if not update.has_key(row):
+                update[row] ={}
+            if c[5] != '':
+                update[row]['_id'] = c[5]
+            if column == 0:
+                update[row]['type'] = value
+                continue
+            if column == 1:
+                update[row]['name'] = value
+                continue
+            if column == 2:
+                update[row]['gender'] = value
+                continue
+            if column == 3:
+                update[row]['birthday'] = value
+                continue
+            if column == 4:
+                update[row]['company'] = value
+                continue
+            if column == 5:
+                update[row]['vocation'] = value
+                continue
+            if column == 6:
+                update[row]['phone_home'] = value
+                continue
+            if column == 7:
+                update[row]['email_work'] = value
+                continue
+            if column == 8:
+                update[row]['email_personal'] = value
+                continue
+            if column == 9:
+                update[row]['phone_work'] = value
+                continue
+            if column == 10:
+                update[row]['phone_personal'] = value
+                continue
+
+        for c in update:
+            row = c
+            c = update[row]
+            if c.has_key('_id') and c['_id'] !='':
+                customer = dbs.customer(c['_id'])
+                c.pop('_id')
+            else:
+                nc =model.getCustomerModel()
+                nc["manager"] =session['_id']
+                customer = dbs.customer(nc)
+                customer.save()
+                result['idlist'].append({'row':int(row),'_id':str(customer['_id'])})
+            for i in c:
+                if i == 'phone_work':
+                    customer['phone']['work'] = c[i]
+                    continue
+                if i == 'phone_personal':
+                    customer['phone']['personal'] = c[i]
+                    continue
+                if i == 'phone_home':
+                    customer['phone']['home'] = c[i]
+                    continue
+                if i == 'email_work':
+                    customer['email']['work'] = c[i]
+                    continue
+                if i == 'email_personal':
+                    customer['email']['personal'] = c[i]
+                    continue
+                if i == 'birthday':
+                    customer['birthday']['date']= c[i]
+                    continue
+                customer[i] = c[i]
+            customer.update()
+        if len(result['idlist']) != 0:
+            result['status']='reload'
+        return uti.myjsonify(result)
 
 
 
@@ -325,6 +429,12 @@ def cal():
     if auth() == False:
         return redirect(url_for('login'))
     return r_t('cal.html')
+
+@app.route('/fast_customers',methods=['GET'])
+def fast_customers():
+    if auth() == False:
+        return redirect(url_for('login'))
+    return r_t('manage_fast_customers.html')
 
 @app.route('/project',methods=['GET'])
 def project():

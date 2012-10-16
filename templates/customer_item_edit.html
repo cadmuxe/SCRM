@@ -40,7 +40,16 @@
             <!--Body content-->
             <div class="">
                     <div class="row">
-                        <form class="form-inline myform" action=""> 
+                        <form class="form-inline myform" action="">
+                            <div class="control-group">
+                                <label class="radio">
+                                    <input type="radio" name="customer_type" id="typeRadios1" value="客户" {% if customer["type"]== "客户"%} checked=true{% endif %}>客户
+                                </label>
+                                <label class="radio">
+                                    <input type="radio" name="customer_type" id="typeRadios2" value="渠道" {% if customer["type"]== "客户"%} checked=true{% endif %}>渠道
+                                </label>
+
+                            </div>
                             <div class="row well">
                                 <div class="span3">
 
@@ -60,12 +69,13 @@
                                         <label class="control-label">生日</label>
                                         <input type="text" class="input-medium mydata" id="birth" placeholder="yyyy-mm-dd" value="{{customer['birthday']['date']}}">
                                     </div>
+
                                     <div class="control-group">
-                                        <label class="control-label">行业</label>
-                                        <input type="text" class="input-medium mydata" id="sector" placeholder="行业" value="{{customer['sector']}}">
+                                        <label class="control-label">公司名称</label>
+                                        <input type="text" class="input-medium mydata" id="company" placeholder="公司" value="{{customer['company']}}">
                                     </div>
                                     <div class="control-group">
-                                        <label class="control-label">职业</label>
+                                        <label class="control-label">职务</label>
                                         <input type="text" class="input-medium mydata" id="vocation" placeholder="职业" value="{{customer['vocation']}}">
                                     </div>
                                 </div>
@@ -81,8 +91,8 @@
                                         <input type="text" class="input-medium mydata" id="email_p" placeholder="私人邮箱" value="{{customer['email']['personal']}}">
                                     </div>
                                     <div class="control-group">
-                                        <label class="control-label">公司名称</label>
-                                        <input type="text" class="input-large mydata" id="company" placeholder="公司" value="{{customer['company']}}">
+                                        <label class="control-label">行业</label>
+                                        <input type="text" class="input-medium mydata" id="sector" placeholder="行业" value="{{customer['sector']}}">
                                     </div>
                                     <div class="control-group">
                                         <label class="control-label">家庭住址</label>
@@ -250,14 +260,23 @@
     var likes = {{g.dbs.tags("likes").get_json()|safe}};
     
     var customer={{customer|jsonify|safe}};
-    
+    $('#introducer').tokenInput({{g.dbs.get_json_customer_and_id_list()|safe}},
+    {
+        theme: "facebook",
+                searchDelay:100
+    });
+    var intro = customer.channel;
+    if(intro._id != undefined){
+        $('#introducer').tokenInput('add', {'name':intro.name,"_id":intro._id});
+    }
+
+
     $(function(){ 
       
       /*
        matcher:mymatch
        */
       $('#sector').typeahead({source:sector,items:5,matcher:mymatcher_t});
-      $('#vocation').typeahead({source:vocation,items:5,matcher:mymatcher_t});
       $('#likes').typeahead({source:likes,items:5,matcher:mymatcher_t});
 
 
@@ -324,14 +343,17 @@
                               });
 
       $('a#btn_submit').click( function(){
-            customer.type = "customer";
+            customer.type = $('input[name=customer_type]:checked').val();
             customer.manager = "{{ session['_id'] }}";
             customer.name = $('input#name').val();
             customer.gender = $('input[name=gender]:checked').val();
             t = $("input#birth").val();
-            var b = customer.birthday;
-            b['date'] =t;
-            customer.birthday=b;
+            if(customer.birthday == undefined){
+                customer.birthday={'date':t};
+            }
+            else{
+                customer.birthday["date"] = t;
+            }
             customer.sector = $('input#sector').val();
             customer.vocation = $('input#vocation').val();
 
@@ -360,7 +382,12 @@
                     "remark" : $(s[2]).val()});
             }
 
-            customer.channel = {"method":$('#channel').val(), "name":$('#introducer').val()};
+              customer.channel = {"method":$('#channel').val()};
+              var intro = $('#introducer').tokenInput('get');
+              if (intro.length != 0){
+                  customer.channel.name = intro[0].name;
+                  customer.channel._id = intro[0]._id;
+              }
             customer.remark = $('#remark').val();
 
             var request = $.ajax({

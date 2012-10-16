@@ -26,18 +26,20 @@ Customer = Ember.Object.extend({
             var rtn = ['type','manager','name','gender','birthday','memorial_days',
                 'tags','sector','vocation','phone','email','company','home_addr',
             'contracts','likes','wishlist','remark','welfare','activities',
-                'relevance_people','social','channel'];
+                'relevance_people','social','channel','contact_record'];
             if (this.get('_id') != undefined){rtn.push('_id');}
             return this.getProperties(rtn);
         },
-        view_how_long:function(){
-            if (this.how_long != 10000){
-                return this.how_long;
+        how_long:function(){
+            if (this.get('contact_record')["date"] != ''){
+                dp = new Date(this.contact_record["date"]);
+                dn = new Date();
+                return Math.round((dn-dp)/86400000);
             }
             else{
                 return "无联络信息";
             }
-        }.property('how_long')
+        }.property("contact_record.date")
 
     });
 

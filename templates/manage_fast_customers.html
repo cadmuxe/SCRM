@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+
+{% block title %}Index{% endblock %}
+
+
+<!-- Css -->
+{% block css %}
+<style>
+    .mylabel{
+        margin-right:10px;
+    }
+
+</style>
+{% endblock %}
+
+<!-- ++++++++++++Content+++++++++++++ -->
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="span2">
+            <!--Sidebar content-->
+            <div class="" style="padding: 8px 0; margin-right:20px;">
+            <ul class="nav nav-list">
+                <li class="nav-header">
+                    管理
+                </li>
+                <li>
+                    <a href="/project"><i class="icon-list"></i>项目管理</a>
+                </li>
+                <li class="active">
+                    <a href="/fast_customers"><i class="icon-list"></i>快速客户管理</a>
+                </li>
+                <li class="nav-header">
+                    设置
+                </li>
+                <li>
+                    <a href="/settingss"><i class="icon-list"></i>综合设置</a>
+                </li>
+            </ul>
+            </div>
+        </div>
+        <div class="span10">
+            <div id="fast_customers" class="dataTable" style="width: 800px;
+    height: 500px; overflow: scroll"></div>
+            <div id="example6console"></div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block js %}
+<script>
+
+    $("#fast_customers").handsontable({
+        rows: 40,
+        cols: 12,
+        minSpareCols: 1, //always keep at least 1 spare col at the right
+        minSpareRows: 1, //always keep at least 1 spare row at the bottom
+        rowHeaders: true, //turn off 1, 2, 3, ...
+        colHeaders: ["类型", "姓名", "性别","生日","公司","职务",'工作电话',"私人电话","家庭电话","私人邮箱","工作邮箱","_id"],
+        legend: [
+            {
+                match: function (row, col, data) {
+                    if (col == 11) {
+                        return true;
+                    }
+                    return false;
+                },
+                readOnly: true,
+                style: {
+                    fontStyle: 'italic' //make the text italic
+                },
+            }
+        ],
+        onChange: function (data, source) {
+            if (source == 'loadData' || source == 'autofill') {
+                return; //don't show this change in console
+            }
+            for(var i in data){
+                var cell_id = $("#fast_customers").handsontable('getDataAtCell', data[i][0], 11);
+                data[i].push(cell_id);
+            }
+            request = $.ajax({
+                type: "POST",
+                url: '/api/customer/excel',
+                contentType:"application/json",
+                dataType:'json',
+                data:JSON.stringify(data),
+                success: function(data) {
+                    if(data['status'] == 'reload'){
+                        request = $.ajax({
+                            type: "GET",
+                            url: '/api/customer/excel',
+                            dataType:'json',
+                            success: function(data) {
+                                $("#fast_customers").handsontable("loadData", data);
+                            }
+                        });
+                    }
+
+                }
+            });
+        }
+    });
+
+    request = $.ajax({
+        type: "GET",
+        url: '/api/customer/excel',
+        dataType:'json',
+        success: function(data) {
+            $("#fast_customers").handsontable("loadData", data);
+        }
+    });
+ </script>
+{% endblock %}

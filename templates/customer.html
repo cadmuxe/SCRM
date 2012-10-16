@@ -149,8 +149,9 @@
                     <thead>
                     <tr>
                         <th>#</th>
-                        <th>签约时间</th>
                         <th>项目</th>
+                        <th>起息时间</th>
+                        <th>年化收益</th>
                         <th>期限</th>
                         <th>金额</th>
                     </tr>
@@ -159,9 +160,10 @@
                     {% for contract in contracts%}
                     <tr>
                         <td>{{loop.index}}</td>
-                        <td>{{contract["contract_date"]|date}}</td>
                         <td>{{contract["contract_project"]['name']}}</td>
-                        <td>{{contract["contract_start"]|date}} 至 {{contract["contract_end"]|date}}</td>
+                        <td>{{contract["interest_start"]}}</td>
+                        <td>{{contract["contract_income"]}}%</td>
+                        <td>{{contract["contract_length"]}}</td>
                         <td>{{contract["amount"]}}</td>
                         <td><a href="#" class="edit_contract" data-id="{{contract['_id']}}">Edit</a></td>
                     </tr>
@@ -283,6 +285,7 @@
             url: "/api/contract/"+$(evn.currentTarget).data('id'),
             dataType:'json',
             success: function(data) {
+                clear_contract();
                 set_contract(data);
             }
         });

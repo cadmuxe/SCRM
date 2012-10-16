@@ -1,7 +1,7 @@
 #-*- coding:utf-8 -*-
 import pymongo, myjson_util, json, pymongo.cursor,time
 from bson.objectid import ObjectId
-import uti,calendar,datetime,copy
+import uti,calendar,datetime,copy,re
 
 def get_db():
     """return 'fanfan_crm' db
@@ -12,12 +12,39 @@ def get_db():
 
 db = get_db()
 
+def get_json_customer_list():
+    list = db["customer"].find({},{'name':1})
+    l = []
+    for c in list:
+        l.append(c["name"])
+    same=[]
+    for i in range(len(l)):
+        for j in l[i+1:]:
+            if l[i] == j:
+                try:
+                    same.index(l[i])
+                except ValueError:
+                    same.append(l[i])
+    if len(same) == 0:
+        return uti.myjsonify(l)
+    else:
+        for i in same:
+            while True:
+                try:
+                    l.remove(i)
+                except ValueError:
+                    break
+            namel = customer.objects.find_contact_namei_list_by_name(i)
+            for i in namel:
+                l.append(i)
+        return uti.myjsonify(l)
 def get_json_customer_and_id_list():
     list = db["customer"].find({},{'_id':1,'name':1})
     l = []
     for c in list:
         l.append({'name':c["name"],'_id':c["_id"]})
     return uti.myjsonify(l)
+
 
 def get_json_working_project_list():
     list = project.objects.get_working_project_list().get_python(['project_name'])
@@ -144,11 +171,10 @@ class querySet:
         else:
             self.__sets = o_set
 
-    def enlargeSet(self,document):
-        if isinstance(document,self.__doc_class) == False:
-            raise ValueError
-        else:
-            self.__sets.append(document)
+    def enlargeSet(self,documents):
+        if isinstance(documents,pymongo.cursor.Cursor):
+            for i in documents:
+                self.__sets.append(self.__doc_class(i))
         return self
     def count(self):
         return len(self.__sets)
@@ -186,6 +212,10 @@ class BaseDocument(object):
     def __init__(self,d):
         if type(d) == dict:
             self._doc = myjson_util.object_hook(d)
+        elif d is ObjectId:
+            self._doc = db[self._collection].find_one({"_id":ObjectId(d)})
+        elif (type(d) == unicode) or (type(d) == str):
+            self._doc = db[self._collection].find_one({"_id":ObjectId(d)})
         elif d is None:
             raise ValueError
         else:
@@ -211,6 +241,10 @@ class BaseDocument(object):
         only used for debugging
         """
         raise ValueError
+    def update(self):
+        self.save()
+        self.calculate()
+        return self.save()
 
     def get_python(self,selection=[]):
         if selection == []:
@@ -225,10 +259,6 @@ class BaseDocument(object):
     def calculate(self):
         if self._doc.has_key('_id') == False:
             self.save()
-        return
-    def update(self):
-        self.calculate()
-        self.save()
         return self
 
     def __iter__(self):
@@ -236,7 +266,10 @@ class BaseDocument(object):
     def __str__(self):
         return "%s : ObjectId(%s)" % (self._collection,str(self._doc["_id"]))
     def __getitem__(self, item):
-        return self._doc[item]
+        try:
+            return self._doc[item]
+        except KeyError:
+            return ""
     def __setitem__(self, key, value):
         self._doc[key] = value
 
@@ -276,8 +309,44 @@ class customerQuery(BaseQuery):
         self._collection = "customer"
 
     def not_contact_list(self):
-        cursor = db[self._collection].find({"how_long":{"$gte":10}}).sort("how_long",pymongo.DESCENDING).limit(15)
-        return querySet(self._collection,cursor)
+        today = datetime.datetime.today()
+        date_diff = datetime.timedelta(days=10)
+        query_day = today - date_diff
+        cursor = db[self._collection].find({"contact_record.date":''})
+        qS = querySet(self._collection,cursor)
+        cursor = db[self._collection].find({"contact_record.date":{"$lt":query_day}}).sort("contact_record.date",pymongo.ASCENDING).limit(15)
+        qS.enlargeSet(cursor)
+        return qS
+    def find_contact_namei_list_by_name(self,name):
+        cl = db[self._collection].find({"name":name})
+        list = []
+        for i in cl:
+            c =customer(i)
+            list.append(c.get_namei())
+        return list
+
+    def find_by_namei(self,namei):
+        if namei.find('(') == -1:
+            return self._find_by_name(namei)
+        else:
+            m = re.match(r".*\((.*)\)",namei)
+            st = m.group(1)
+            if st.find('@') == -1:
+                return self._find_by_phone(st)
+            else:
+                return self._find_by_email(st)
+        raise ValueError
+
+    def _find_by_name(self,name):
+        c = db[self._collection].find_one({"name":name})
+        return customer(c)
+    def _find_by_phone(self,phone):
+        c = db[self._collection].find_one({"$or":[{"phone.work":phone},{"phone.personal":phone},{"phone.home":phone}]})
+        return customer(c)
+    def _find_by_email(self,email):
+        c = db[self._collection].find_one({"$or":[{"email.work":email},{"email.personal":email}]})
+        return customer(c)
+
 
 class calQuery(BaseQuery):
     def __init__(self):
@@ -356,6 +425,19 @@ class customer(BaseDocument):
         self._c_birthday()
         self._c_amount()
         self._c_contact()
+        return self
+    def get_namei(self):
+        if self._doc['email']['personal'] !="":
+            return self._doc['name'] + '(' + self._doc['email']['personal'] +')'
+        if self._doc['email']['work'] !="":
+            return self._doc['name'] + '(' + self._doc['email']['work'] +')'
+        if self._doc['phone']['personal'] !="":
+            return self._doc['name'] + '(' + self._doc['phone']['personal'] +')'
+        if self._doc['phone']['work'] !="":
+            return self._doc['name'] + '(' + self._doc['phone']['work'] +')'
+        if self._doc['phone']['home'] !="":
+            return self._doc['name'] + '(' + self._doc['phone']['home'] +')'
+        return self._doc['name']
 
     def _c_amount(self):
         amount = 0
@@ -365,17 +447,19 @@ class customer(BaseDocument):
         self._doc["amount"] = amount
         return
     def _c_contact(self):
-        c = db['cal'].find({"attend._id":self._doc['_id'],"type":u"事务"}).sort("start", pymongo.DESCENDING)[0]
+        try:
+            c = db['cal'].find({"attend._id":self._doc['_id'],"type":u"事务"}).sort("start", pymongo.DESCENDING)[0]
+        except:
+            c = None
         if c == None:
-            self._doc["contact_record"] = {'_id':None,'date':u"无联络信息"}
-            self._doc["how_long"] = 10000
+            self._doc["contact_record"] = {'_id':'','date':''}
         else:
             self._doc["contact_record"] = {"_id":c["_id"],
-                                           "date":uti.time_datetime_to_string_date(c["start"])}
-            start = cal(self._doc["contact_record"]["_id"])["start"]
-            self._doc["how_long"] = (datetime.datetime.today() - start).days
+                                           "date":c["start"]}
         return
     def _c_birthday(self):
+        if not self._doc["birthday"].has_key('date'):
+            return
         date = self._doc["birthday"]["date"].strip()
         if date == '':
             return
@@ -393,6 +477,7 @@ class customer(BaseDocument):
         else:
             return
         t = datetime.datetime(int(year),int(month),int(day))
+
         if self._doc['birthday'].has_key('_id'):
             try:
                 m = memorial(self._doc['birthday']['_id'])
@@ -424,13 +509,12 @@ class cal(BaseDocument):
     def __init__(self,c):
         self._collection = "cal"
         super(cal,self).__init__(c)
-    def update(self):
-        self.calculate()
-        self.save()
+    def calculate(self):
+        if self._doc.has_key('_id') == False:
+            self.save()
         for i in self._doc["attend"]:
             customer(i['_id']).update()
         return self
-
 
 class memorial(BaseDocument):
     objects = memorialQuery()
@@ -454,7 +538,7 @@ class memorial(BaseDocument):
             self.save()
         self._c_search_helper()
         self._c_title()
-        self.save()
+        return self
 
 class contract(BaseDocument):
     objects = contractQuery()
@@ -466,12 +550,16 @@ class contract(BaseDocument):
         if self._doc.has_key('_id') == False:
             self.save()
         self._c_project()
-        self.save()
+        self._c_customer_amount()
+        return self
+
     def _c_project(self):
         p =  project.objects.find_by_project_name(self._doc['contract_project']['name'])
         if p == False:
             p = project({'project_name':self._doc['contract_project']['name'],"working":True}).save()
         self._doc['contract_project']['_id'] = p['_id']
+    def _c_customer_amount(self):
+        c = customer(self._doc['user_id']).update()
 
 
 class project(BaseDocument):

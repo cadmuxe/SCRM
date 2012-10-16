@@ -287,26 +287,56 @@
     </div>
     <hr>
     <div class="control-group">
-        <label class="control-label">合同开始日期</label>
+        <label class="control-label">起息时间</label>
         <div class="controls">
-            <input type="text" class="input-small datepicker" id="contract_start_date">
+            <input type="text" class="input-small datepicker" id="interest_start">
         </div>
     </div>
     <div class="control-group">
-        <label class="control-label">合同结束日期</label>
-        <div class="controls">
-            <input type="text" class="input-small datepicker" id="contract_end_date">
+        <label class="control-label">付息时间及收益</label>
+        <div class="controls" id="interest_pay" >
+            <a id="interest_pay_add" href="#"><i class="icon-plus-sign"></i></a>
+            <div class="interest_pay">
+                <input type="text" class="input-small datepicker" class="interest_pay_date" placeholder="付息时间">
+                <input type="text" class="input-small " class="interest_pay_rate" placeholder="付息比例">
+                <div class="input-append">
+                    <input type="text" class="span1 " class="interest_pay_amount" placeholder="金额"><span class="add-on">万</span>
+                </div>
+            </div>
         </div>
     </div>
     <div class="control-group">
-        <label class="control-label">合同金额</label>
+        <label class="control-label">认购金额</label>
         <div class="controls">
             <div class="input-append">
-                <input type="text" class="input" placeholder="金额" id="amount"><span class="add-on">万元</span>
+                <input type="text" class="input-medium" placeholder="金额" id="amount"><span class="add-on">万元</span>
+            </div>
+        </div>
+    </div>
+    <div class="control-group">
+        <label class="control-label">合同期限</label>
+        <div class="controls">
+            <input type="text" class="input" placeholder="期限" id="contract_length">
+        </div>
+    </div>
+    <div class="control-group">
+        <label class="control-label">年化收益</label>
+        <div class="controls">
+            <div class="input-append">
+                <input type="text" class="input-small" placeholder="收益率" id="contract_income"><span class="add-on">%</span>
             </div>
         </div>
     </div>
     <hr>
+    <div class="control-group">
+        <label class="control-label">返现</label>
+        <div class="controls">
+            <input type="text" class="input-small" id="refund_name">
+            <div class="input-append">
+                <input type="text" class="input-small" placeholder="金额" id="refund_amount"><span class="add-on">元</span>
+            </div>
+        </div>
+    </div>
     <div class="control-group">
         <label class="control-label">备注</label>
         <textarea type="text" class="input-xlarge"  id="remark"></textarea>
@@ -318,6 +348,19 @@
         $( ".datepicker" ).datepicker({ dateFormat: "yy-mm-dd" });
         var projects  ={{g.dbs.get_json_working_project_list()|safe}};
         $('#contract_project').typeahead({source:projects,items:5,matcher:mymatcher_t})
+        $( "#refund_name" ).tokenInput({{g.dbs.get_json_customer_and_id_list()|safe}},
+        {
+            theme: "facebook",
+                    searchDelay:100
+        });
+        var html= "<div class='interest_pay'><input type='text' class='input-small datepicker' class='interest_pay_date' placeholder='付息时间'>  \
+            <input type='text' class='input-small ' class='interest_pay_rate' placeholder='付息比例'>  \
+             <div class='input-append'>  \
+            <input type='text' class='span1 ' class='interest_pay_amount' placeholder='金额'><span class='add-on'>万</span> </div> </div>"
+        $('#interest_pay_add').click(function(){
+                $('#interest_pay').append(html);
+            return false;
+                });
     });
     var _contract={};
     function get_contract(){
@@ -326,30 +369,74 @@
         _contract.contract_date = $("#contract_date").val();
         var contract_project = {'name':$('#contract_project').val()}
         _contract.contract_project = contract_project;
-        _contract.contract_start = $("#contract_start_date").val();
-        _contract.contract_end = $("#contract_end_date").val();
+        _contract.interest_start = $("#interest_start").val();
+        var interest_pay=[];
+        var int_pay =$('.interest_pay');
+        for(var item=0; item <int_pay.length;item++){
+            var pay={};
+            var date = $($(int_pay[item]).find('input')[0]).val();
+            if(date =='') { continue;}
+            pay.date =date;
+            pay.rate=$($(int_pay[item]).find('input')[1]).val();
+            pay.amount = $($(int_pay[item]).find('input')[2]).val();
+            interest_pay.push(pay);
+        }
+        _contract.interest_pay = interest_pay;
+        _contract.contract_income = $('#contract_income').val();
+        _contract.contract_length = $('#contract_length').val();
         _contract.amount = $('#amount').val();
         _contract.remark = $('#remark').val();
+        var refund =  $("#refund_name" ).tokenInput('get');
+        if(refund.length == 1) {
+            refund =refund[0];
+            refund.amount =$("#refund_amount").val();
+        }
+        else{
+            refund={};
+        }
+        _contract.refund =refund;
         return _contract;
     }
     function set_contract(ctct){
         _contract=ctct;
         $("#contract_date").val(_contract.contract_date);
         $('#contract_project').val(_contract.contract_project.name);
-        $("#contract_start_date").val(_contract.contract_start);
-        $("#contract_end_date").val(_contract.contract_end);
+        $("#interest_start").val(_contract.interest_start);
+        var l = _contract.interest_pay.length;
+        var html= "<div class='interest_pay'><input type='text' class='input-small datepicker' class='interest_pay_date' placeholder='付息时间'>  \
+            <input type='text' class='input-small ' class='interest_pay_rate' placeholder='付息比例'>  \
+             <div class='input-append'>  \
+            <input type='text' class='span1 ' class='interest_pay_amount' placeholder='金额'><span class='add-on'>万</span> </div> </div>"
+        for (var i=1; i<l;i++){
+            $('#interest_pay').append(html);
+        }
+
+
+        var int_pay =$('.interest_pay');
+        for (var i=0;i<l;i++){
+            $($(int_pay[i]).find('input')[0]).val(_contract.interest_pay[i].date);
+            $($(int_pay[i]).find('input')[1]).val(_contract.interest_pay[i].rate);
+            $($(int_pay[i]).find('input')[2]).val(_contract.interest_pay[i].amount);
+        }
+        $("#contract_income").val(_contract.contract_income);
+        $('#contract_length').val(_contract.contract_length);
+        if(_contract.refund.name != undefined){
+            $("#refund_name" ).tokenInput("add",{'_id':_contract.refund._id,'name':_contract.refund.name});
+        }
+        $("#refund_amount").val(_contract.refund.amount);
         $('#amount').val(_contract.amount);
         $('#remark').val(_contract.remark);
         return true;
     }
     function clear_contract(){
         _contract={};
-        $("#contract_date").val("");
-        $('#contract_project').val("");
-        $("#contract_start_date").val("");
-        $("#contract_end_date").val("");
-        $('#amount').val("");
-        $('#remark').val("");
+        $("input").val("");
+        var pay =$('.interest_pay');
+        var l = pay.length;
+        for(var i=1;i<l;i++){
+            $(pay[i]).remove();
+        }
+        $("#refund_name" ).tokenInput("clear");
         return true;
     }
 </script>
