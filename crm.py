@@ -219,7 +219,7 @@ def api_customer_list():
         page_now = int(request.form['page'])
         list = dbs.customer.objects.search({"manager":ObjectId(session['_id'])},
                 request.form['query'],
-                ["name","type","gender","company","sector","vocation"],
+                ["name","type","gender","company","channel.name","vocation"],
                 )
         total = list.count()
         p = total %10
@@ -240,7 +240,7 @@ def api_customer_list():
             noww = (page_now-1)*each_page + len(list)
 
         r = {"total":total,"now":str(now)+'-'+str(noww),"pages":pages,"page_now":page_now,
-             "list":list.get_python(["_id","name","type","gender","company","sector","vocation","amount","contact_record"]) }
+             "list":list.get_python(["_id","name","type","gender","company","channel","vocation","amount","contact_record"]) }
         return uti.myjsonify(r)
 
     return "ok"
@@ -379,7 +379,7 @@ def api_customer_excel():
 @app.route('/')
 def home():
     if auth() == False:
-        return redirect('/login')
+        return redirect(url_for('login'))
     return r_t('index.html',navbar_n=0)
 
 # Customer
@@ -474,9 +474,9 @@ def login():
             session['_id'] = u['_id']
             session['name'] = u['name']
             session['type'] = u['type']
-            return redirect('/')
+            return redirect(url_for('home'))
         else:
-            return redirect('/login')
+            return redirect(url_for('login'))
 @app.route('/print_info')
 def print_info():
     if auth() == False:
@@ -487,7 +487,7 @@ def print_info():
 @app.route('/logout')
 def logout():
     session.clear()
-    return redirect('/login')
+    return redirect(url_for('login'))
 
 if __name__ == '__main__':
     app.run(debug=True)

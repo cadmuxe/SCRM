@@ -44,7 +44,7 @@
                     <th>公司</th>
                     <th>职务</th>
                     <th>姓名</th>
-                    <th>行业</th>
+                    <th>推荐人</th>
                     <th>上次通信时间</th>
                     <th>累计合约</th>
                 </tr>
@@ -87,7 +87,11 @@
                 <td><a class='btn_add' href='#'><%= this.list[i].company %> </a></td>
                 <td><a class='btn_add' href='#'><%= this.list[i].vocation %> </a></td>
                 <td><a class='btn_name' href='/customer/<%= this.list[i]._id %>'><%= this.list[i].name %>(<%=this.list[i].gender%>)</a> </td>
-                <td><a class='btn_add' href='#'><%= this.list[i].sector %></a></td>
+                <% if (this.list[i].channel.name != undefined ) { %>
+                    <td><a class='btn_add' href='#'><%= this.list[i].channel.name %></a></td>
+                <% } else { %>
+                <td></td>
+                <% } %>
                 <td><%=this.list[i].contact_record.date%></td>
                 <td><%=this.list[i].amount%></td>
             </tr>
