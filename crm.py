@@ -379,7 +379,7 @@ def api_customer_excel():
 @app.route('/')
 def home():
     if auth() == False:
-        return redirect(url_for('login'))
+        return redirect('/login')
     return r_t('index.html',navbar_n=0)
 
 # Customer
@@ -474,9 +474,9 @@ def login():
             session['_id'] = u['_id']
             session['name'] = u['name']
             session['type'] = u['type']
-            return redirect(url_for('home'))
+            return redirect('/')
         else:
-            return redirect(url_for('login'))
+            return redirect('/login')
 @app.route('/print_info')
 def print_info():
     if auth() == False:
@@ -487,7 +487,7 @@ def print_info():
 @app.route('/logout')
 def logout():
     session.clear()
-    return redirect(url_for('login'))
+    return redirect('/login')
 
 if __name__ == '__main__':
     app.run(debug=True)
