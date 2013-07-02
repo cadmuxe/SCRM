@@ -6,8 +6,7 @@ import uti,calendar,datetime,copy,re
 def get_db():
     """return 'fanfan_crm' db
     """
-    con = pymongo.Connection('localhost',27017)["fanfan_crm"]
-    print id(con)
+    con = pymongo.Connection('localhost',27017)["crm_demo"]
     return con
 
 db = get_db()
@@ -301,7 +300,6 @@ class BaseQuery():
                     q_or.append({f:{"$regex":k}})
                 q_and.append({'$or':q_or})
             query["$and"]= q_and
-        print query
         return  self.find(query)
 
 class customerQuery(BaseQuery):
@@ -381,7 +379,6 @@ class memorialQuery(BaseQuery):
         """
         start, end datetime type
         """
-        print "new!!"
         search_helper_start =  start.replace(year = 1901)
         search_helper_end = end.replace(year = 1901)
         cursor = db[self._collection].find({"search_helper":
